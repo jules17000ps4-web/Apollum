@@ -30,27 +30,59 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script>
 const {useState} = React;
-
-// ─── Design tokens — Apollum ──────────────────────────────────────────────────
-const T = {
-  bg:      "#F7F4EE",   // ivoire chaud
-  surface: "#FDFCF8",   // blanc cassé
-  border:  "#E8DFC8",   // sable doré clair
-  bordMd:  "#D4C49A",   // or sable moyen
-  text:    "#1C1812",   // noir encre
-  muted:   "#8C7E5E",   // brun doré
-  mutedLt: "#BFB08A",   // or pâle
-  ink:     "#2C2416",   // brun foncé
-  gold:    "#C9A84C",   // or antique
-  goldDk:  "#8B6914",   // or foncé
-  goldLt:  "#EDD98A",   // or clair
-  green:   "#4A7C59",   // vert sauge
-  red:     "#9B3A2E",   // rouge terracotta
-  orange:  "#B87333",   // bronze
-  blue:    "#3D5A8A",   // bleu ardoise
-  purple:  "#6B4E8A",   // pourpre
-  teal:    "#2E6B6B",   // vert-de-gris
+// ─── Themes ───────────────────────────────────────────────────────────────────
+const THEMES = {
+  light: {
+    bg:      "#F7F4EE",
+    surface: "#FDFCF8",
+    border:  "#E8DFC8",
+    bordMd:  "#D4C49A",
+    text:    "#1C1812",
+    muted:   "#8C7E5E",
+    mutedLt: "#BFB08A",
+    ink:     "#2C2416",
+    gold:    "#C9A84C",
+    goldDk:  "#8B6914",
+    goldLt:  "#EDD98A",
+    green:   "#4A7C59",
+    red:     "#9B3A2E",
+    orange:  "#B87333",
+    blue:    "#3D5A8A",
+    purple:  "#6B4E8A",
+    teal:    "#2E6B6B",
+  },
+  dark: {
+    bg:      "#1A1510",
+    surface: "#221C15",
+    border:  "#3D3425",
+    bordMd:  "#524535",
+    text:    "#D4C9B0",
+    muted:   "#6B5C45",
+    mutedLt: "#4A3D2C",
+    ink:     "#E8DFC8",
+    gold:    "#C17D2A",
+    goldDk:  "#D4954A",
+    goldLt:  "#8B6914",
+    green:   "#5A7A50",
+    red:     "#A84D30",
+    orange:  "#C17D2A",
+    blue:    "#4A6A9A",
+    purple:  "#7A5A9A",
+    teal:    "#3A7A7A",
+  },
 };
+
+// Theme context
+const ThemeContext = React.createContext("light");
+const useTheme = () => {
+  const mode = React.useContext(ThemeContext);
+  return THEMES[mode] || THEMES.light;
+};
+
+// ─── Design tokens — resolved at render time ──────────────────────────────────
+// T is now a proxy-like getter — components call useTheme() directly
+// For backward compat with non-hook contexts we keep a mutable T ref
+let T = THEMES.light;
 const font  = "'Instrument Sans','Inter',system-ui,sans-serif";
 const serif = "'Cormorant Garamond','Georgia',serif";
 const mono  = "'DM Mono','Fira Mono',monospace";
@@ -2439,11 +2471,11 @@ function AppareilsView({ data, setData }) {
 }
 
 // ─── PROFILE VIEW ─────────────────────────────────────────────────────────────
-function ProfileView({ profile, setProfile, setTab, calorieTarget, data, setData }) {
+function ProfileView({ profile, setProfile, setTab, calorieTarget, data, setData, theme, setTheme }) {
   const [local,      setLocal]     = useState({ ...profile });
   const [saved,      setSaved]     = useState(false);
   const [screen,     setScreen]    = useState("view");   // "view" | "edit"
-  const [innerTab,   setInnerTab]  = useState("profil"); // "profil" | "corps"
+  const [innerTab,   setInnerTab]  = useState("profil"); // "profil" | "corps" | "appareils" | "reglages"
 
   // Live preview of targets as user edits
   const preview = calculateCalorieTarget(local);
@@ -2478,7 +2510,7 @@ function ProfileView({ profile, setProfile, setTab, calorieTarget, data, setData
 
   // Shared header with inner tabs (shown in view mode only)
   const InnerTabBar = () => (
-    React.createElement("div",{"style":{ display:"flex", gap:4, marginBottom:20, background:T.border, borderRadius:10, padding:3 }},[["profil","Mon profil"],["corps","Corps"],["appareils","Appareils"]].map(([id,lbl]) => (
+    React.createElement("div",{"style":{ display:"flex", gap:4, marginBottom:20, background:T.border, borderRadius:10, padding:3 }},[["profil","Mon profil"],["corps","Corps"],["appareils","Appareils"],["reglages","⚙️"]].map(([id,lbl]) => (
         React.createElement("button",{"key":id,"onClick":()=>{ setInnerTab(id); setScreen("view"); },"style":{ flex:1, padding:"8px", borderRadius:8, border:"none", cursor:"pointer", fontFamily:font,
             fontWeight:600, fontSize:12, background:innerTab===id?T.surface:"transparent",
             color:innerTab===id?T.text:T.muted, transition:"all .15s",
@@ -2486,7 +2518,52 @@ function ProfileView({ profile, setProfile, setTab, calorieTarget, data, setData
       )))
   );
 
-  // ── CORPS tab — delegates directly to BodyView ─────────────────────────────
+  // ── RÉGLAGES tab ───────────────────────────────────────────────────────────
+  if (innerTab === "reglages") {
+    const exportJSON = () => {
+      const state = { data, profile, exportedAt: new Date().toISOString(), version: "apollum_v1" };
+      const json  = JSON.stringify(state, null, 2);
+      const blob  = new Blob([json], { type:"application/json" });
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement("a");
+      a.href      = url;
+      a.download  = `apollum_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    const importJSON = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (parsed.data)    setData(parsed.data);
+          if (parsed.profile) setProfile(parsed.profile);
+          alert("✅ Données restaurées avec succès !");
+        } catch {
+          alert("❌ Fichier invalide — assure-toi que c'est un backup Apollum.");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    return (
+      React.createElement("div",null,React.createElement(InnerTabBar,null),React.createElement(Card,{"style":{ marginBottom:12 },"pad":16},React.createElement(Label,null,"Apparence"),React.createElement("div",{"style":{ display:"flex", gap:8 }},[["light","☀️ Clair"],["dark","🌙 Sombre"]].map(([mode, lbl]) => (
+              React.createElement("button",{"key":mode,"onClick":() => setTheme(mode),"style":{ flex:1, padding:"12px 8px", borderRadius:10,
+                  border:`2px solid ${theme===mode ? T.gold : T.border}`,
+                  background: theme===mode ? T.goldLt+"33" : T.bg,
+                  color: theme===mode ? T.goldDk : T.muted,
+                  fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:font,
+                  transition:"all .2s" }},lbl)
+            )))),React.createElement(Card,{"style":{ marginBottom:12 },"pad":16},React.createElement(Label,null,"Sauvegarde des données"),React.createElement("div",{"style":{ fontSize:12, color:T.muted, marginBottom:12, lineHeight:1.5 }},"Exporte toutes tes données (séances, nutrition, habitudes, profil) dans un fichier JSON. Garde-le précieusement — il te permet de tout restaurer en cas de problème."),React.createElement(Btn,{"onClick":exportJSON,"style":{ width:"100%", marginBottom:8 }},"📤 Exporter mes données"),React.createElement("div",{"style":{ fontSize:11, color:T.muted, textAlign:"center" }},"Fichier : apollum_backup_YYYY-MM-DD.json")),React.createElement(Card,{"pad":16},React.createElement(Label,null,"Restaurer les données"),React.createElement("div",{"style":{ fontSize:12, color:T.muted, marginBottom:12, lineHeight:1.5 }},"Importe un fichier de sauvegarde Apollum pour restaurer toutes tes données. ⚠️ Tes données actuelles seront remplacées."),React.createElement("button",{"onClick":() => { const inp=document.createElement("input"); inp.type="file"; inp.accept=".json"; inp.onchange=importJSON; inp.click(); },"style":{ width:"100%", padding:"11px", border:`1px solid ${T.border}`, borderRadius:10,
+              background:T.bg, color:T.text, fontSize:13, fontWeight:600,
+              cursor:"pointer", fontFamily:font, textAlign:"center" }},"📥 Importer un backup")))
+    );
+  }
+
+  // ── APPAREILS tab ───────────────────────────────────────────────────────────
   if (innerTab === "appareils") {
     return (
       React.createElement("div",null,React.createElement(InnerTabBar,null),React.createElement(AppareilsView,{"data":data,"setData":setData}))
@@ -3160,18 +3237,30 @@ function migrateData(saved){
 function PersistentApp(){
   const saved=migrateData(loadState());
   const [tab,setTab]=useState("home");
+  const [theme,setTheme]=useState(saved?.theme||"light");
   const [data,setData]=useState(saved?.data||{...SEED,nutrition:{...NUTRITION_SEED,foodBank:FOOD_BANK_SEED},habits:HABITS_SEED,templates:[],sleep:[]});
   const [profile,setProfile]=useState(saved?.profile||USER_PROFILE_SEED);
-  React.useEffect(()=>{saveState({data,profile});},[data,profile]);
+  React.useEffect(()=>{saveState({data,profile,theme});},[data,profile,theme]);
+  // Update T tokens when theme changes
+  React.useEffect(()=>{ Object.assign(T, THEMES[theme]||THEMES.light); },[theme]);
   const calorieTarget=calculateCalorieTarget(profile);
-  const views={home:React.createElement(Home,{data,setTab,profile,calorieTarget}),workout:React.createElement(WorkoutView,{data,setData}),calories:React.createElement(CalView,{data,setData,profile,calorieTarget}),habits:React.createElement(HabitsView,{data,setData}),profil:React.createElement(ProfileView,{profile,setProfile,setTab,calorieTarget,data,setData})};
+  const views={
+    home:React.createElement(Home,{data,setTab,profile,calorieTarget}),
+    workout:React.createElement(WorkoutView,{data,setData}),
+    calories:React.createElement(CalView,{data,setData,profile,calorieTarget}),
+    habits:React.createElement(HabitsView,{data,setData}),
+    profil:React.createElement(ProfileView,{profile,setProfile,setTab,calorieTarget,data,setData,theme,setTheme})
+  };
   const TABS=[{id:"home",label:"Accueil",icon:"◇"},{id:"workout",label:"Séances",icon:"○"},{id:"calories",label:"Nutrition",icon:"△"},{id:"habits",label:"Habitudes",icon:"◻"},{id:"profil",label:"Profil",icon:"◎"}];
   const font="'Instrument Sans','Inter',system-ui,sans-serif";
-  const T_gold="#C9A84C",T_goldDk="#8B6914",T_border="#E8DFC8",T_surface="#FDFCF8",T_bg="#F7F4EE",T_mutedLt="#BFB08A",T_text="#1C1812";
-  return React.createElement("div",{style:{background:T_bg,minHeight:"100vh",fontFamily:font,color:T_text,maxWidth:480,margin:"0 auto"}},
-    React.createElement("div",{style:{padding:"28px 16px 110px"}},views[tab]),
-    React.createElement("nav",{style:{position:"fixed",bottom:0,left:0,right:0,maxWidth:480,margin:"0 auto",background:T_surface+"f5",backdropFilter:"blur(24px)",borderTop:`1px solid ${T_border}`,display:"flex",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"}},
-      TABS.map(t=>{const active=tab===t.id;return React.createElement("button",{key:t.id,onClick:()=>setTab(t.id),style:{flex:1,padding:"12px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontFamily:font,color:active?T_goldDk:T_mutedLt,transition:"color .2s"}},React.createElement("span",{style:{fontSize:15,lineHeight:1}},t.icon),React.createElement("span",{style:{fontSize:10,fontWeight:active?700:500,letterSpacing:.8}},t.label),active&&React.createElement("div",{style:{width:20,height:1.5,background:T_gold,borderRadius:99}}));})
+  const TH=THEMES[theme]||THEMES.light;
+  const T_gold=TH.gold,T_goldDk=TH.goldDk,T_border=TH.border,T_surface=TH.surface,T_bg=TH.bg,T_mutedLt=TH.mutedLt,T_text=TH.text;
+  return React.createElement(ThemeContext.Provider,{value:theme},
+    React.createElement("div",{style:{background:T_bg,minHeight:"100vh",fontFamily:font,color:T_text,maxWidth:480,margin:"0 auto"}},
+      React.createElement("div",{style:{padding:"28px 16px 110px"}},views[tab]),
+      React.createElement("nav",{style:{position:"fixed",bottom:0,left:0,right:0,maxWidth:480,margin:"0 auto",background:T_surface+"f5",backdropFilter:"blur(24px)",borderTop:`1px solid ${T_border}`,display:"flex",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"}},
+        TABS.map(t=>{const active=tab===t.id;return React.createElement("button",{key:t.id,onClick:()=>setTab(t.id),style:{flex:1,padding:"12px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontFamily:font,color:active?T_goldDk:T_mutedLt,transition:"color .2s"}},React.createElement("span",{style:{fontSize:15,lineHeight:1}},t.icon),React.createElement("span",{style:{fontSize:10,fontWeight:active?700:500,letterSpacing:.8}},t.label),active&&React.createElement("div",{style:{width:20,height:1.5,background:T_gold,borderRadius:99}}));})
+      )
     )
   );
 }
