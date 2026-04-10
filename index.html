@@ -984,9 +984,81 @@ function CardioBlockForm({ actType, blocks, setBlocks }) {
   );
 }
 
+// ─── EXERCISE PROGRESS VIEW ───────────────────────────────────────────────────
+function ExerciseProgressView({ exName, allWorkouts, onClose }) {
+  // Collect all performances for this exercise across all workouts
+  const perfs = [];
+  (allWorkouts||[]).forEach(wo => {
+    if (!wo.exercises) return;
+    wo.exercises.forEach(ex => {
+      (ex.items||[]).forEach(it => {
+        if (it.name !== exName) return;
+        const maxW = Math.max(...(it.sets||[]).map(s=>+s.w||0).filter(v=>v>0), 0);
+        const maxR = Math.max(...(it.sets||[]).map(s=>+s.r||0).filter(v=>v>0), 0);
+        if (maxW > 0 || maxR > 0) {
+          perfs.push({ date:wo.date, maxW, maxR, sets:(it.sets||[]).length });
+        }
+      });
+    });
+  });
+  perfs.sort((a,b) => a.date.localeCompare(b.date));
+
+  const pr = perfs.length ? Math.max(...perfs.map(p=>p.maxW)) : 0;
+  const last5 = [...perfs].reverse().slice(0,5);
+  const trend = perfs.length >= 2
+    ? perfs[perfs.length-1].maxW - perfs[0].maxW
+    : 0;
+
+  // Mini SVG line chart
+  const chartW = 300, chartH = 70;
+  const vals = perfs.map(p=>p.maxW);
+  const minV = Math.min(...vals)||0, maxV = Math.max(...vals)||1;
+  const points = perfs.map((p,i) => {
+    const x = perfs.length===1 ? chartW/2 : i/(perfs.length-1) * chartW;
+    const y = chartH - ((p.maxW-minV)/(maxV-minV||1)) * (chartH-10) - 5;
+    return `${x},${y}`;
+  }).join(" ");
+  const areaPoints = perfs.length
+    ? `0,${chartH} ${points} ${chartW},${chartH}`
+    : "";
+
+  return (
+    React.createElement("div",{"style":{ position:"fixed", inset:0, zIndex:300, background:"#00000066",
+      display:"flex", flexDirection:"column", justifyContent:"flex-end" }},React.createElement("div",{"style":{ background:T.surface, borderRadius:"20px 20px 0 0",
+        maxHeight:"85vh", display:"flex", flexDirection:"column" }},React.createElement("div",{"style":{ padding:"16px", borderBottom:`1px solid ${T.border}`,
+          display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexShrink:0 }},React.createElement("div",null,React.createElement("div",{"style":{ fontSize:15, fontWeight:700, color:T.text, marginBottom:4 }},exName),React.createElement("div",{"style":{ display:"flex", gap:8 }},pr > 0 && React.createElement("span",{"style":{ background:T.gold+"22", border:`1px solid ${T.gold}66`,
+                color:T.goldDk, fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:6 }},"🏆 PR :",pr,"kg"),trend !== 0 && React.createElement("span",{"style":{ fontSize:12, fontWeight:600,
+                color:trend>0?T.green:T.red }},trend>0?"↑":trend<0?"↓":"→",Math.abs(trend),"kg depuis le début"))),React.createElement("button",{"onClick":onClose,"style":{ background:"none", border:"none", fontSize:20, color:T.muted, cursor:"pointer" }},"×")),React.createElement("div",{"style":{ overflowY:"auto", padding:16, flex:1 }},perfs.length === 0 ? (
+            React.createElement("div",{"style":{ textAlign:"center", padding:"40px 0", color:T.muted, fontSize:13 }},"Aucune donnée pour cet exercice encore.")
+          ) : (
+            React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }},[[pr>0?pr+"kg":"—","Max"],
+                  [perfs.length,"Sessions"],
+                  [trend>0?"+"+trend:trend+" kg","Progression"]].map(([v,l])=>(
+                  React.createElement(Card,{"key":l,"pad":10,"style":{ textAlign:"center", marginBottom:0 }},React.createElement("div",{"style":{ fontFamily:mono, fontSize:16, fontWeight:700, color:T.goldDk }},v),React.createElement("div",{"style":{ fontSize:9, color:T.muted, letterSpacing:1, textTransform:"uppercase", marginTop:2 }},l))
+                ))),perfs.length >= 2 && (
+                React.createElement(Card,{"style":{ marginBottom:14 }},React.createElement(Label,null,"Évolution du max"),React.createElement("svg",{"width":"100%","height":chartH,"viewBox":`0 0 ${chartW} ${chartH}`,"preserveAspectRatio":"none"},React.createElement("defs",null,React.createElement("linearGradient",{"id":"pg","x1":"0","y1":"0","x2":"0","y2":"1"},React.createElement("stop",{"offset":"0%","stopColor":T.gold,"stopOpacity":"0.3"}),React.createElement("stop",{"offset":"100%","stopColor":T.gold,"stopOpacity":"0"}))),React.createElement("polygon",{"points":areaPoints,"fill":"url(#pg)"}),React.createElement("polyline",{"points":points,"fill":"none","stroke":T.gold,"strokeWidth":"2.5","strokeLinecap":"round","strokeLinejoin":"round"}),perfs.map((p,i) => {
+                      const x = i/(perfs.length-1)*chartW;
+                      const y = chartH - ((p.maxW-minV)/(maxV-minV||1))*(chartH-10) - 5;
+                      return React.createElement("circle",{"key":i,"cx":x,"cy":y,"r":p.maxW===pr?5:3,"fill":p.maxW===pr?T.gold:T.surface,"stroke":T.gold,"strokeWidth":"2"});
+                    })),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between",
+                    fontSize:9, color:T.mutedLt, marginTop:4 }},React.createElement("span",null,perfs[0]?.date.slice(5).replace("-",".")),React.createElement("span",null,perfs[perfs.length-1]?.date.slice(5).replace("-","."))))
+              ),React.createElement(Card,{"pad":13},React.createElement(Label,null,"Dernières performances"),last5.map((p,i) => (
+                  React.createElement("div",{"key":i,"style":{ display:"flex", justifyContent:"space-between",
+                    alignItems:"center", padding:"8px 0",
+                    borderTop:i>0?`1px solid ${T.border}`:"none" }},React.createElement("div",null,React.createElement("div",{"style":{ fontSize:12, fontWeight:600, color:T.ink }},p.date),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},p.sets,"séries")),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:16, fontWeight:700, color:T.text }},p.maxW>0?`${p.maxW} kg`:`${p.maxR} reps`),p.maxW === pr && pr > 0 && (
+                        React.createElement("span",{"style":{ background:T.gold+"22", border:`1px solid ${T.gold}66`,
+                          color:T.goldDk, fontSize:10, fontWeight:700,
+                          padding:"2px 6px", borderRadius:5 }},"PR")
+                      )))
+                ))))
+          ))))
+  );
+}
+
 // ─── WORKOUT DETAIL ───────────────────────────────────────────────────────────
-function WorkoutDetail({ workout: w, onBack, onDelete }) {
+function WorkoutDetail({ workout: w, onBack, onDelete, allWorkouts }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [progEx,       setProgEx]        = useState(null); // exercise name to show progression
   const cfg   = ACTIVITY_TYPES[w.type];
   const isMuscu = !cfg?.isCardio;
   const fields  = BLOCK_FIELDS[w.type] || [];
@@ -1028,13 +1100,16 @@ function WorkoutDetail({ workout: w, onBack, onDelete }) {
           ].map(([v,u,l],i) => (
             React.createElement("div",{"key":i,"style":{ flex:1, textAlign:"center", borderLeft:i>0?`1px solid ${T.border}`:"none" }},React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:3, justifyContent:"center" }},React.createElement("span",{"style":{ fontFamily:mono, fontWeight:700, fontSize:18, color:cfg?.color }},v),React.createElement("span",{"style":{ fontSize:11, color:T.muted }},u)),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},l))
           )))
+      ),progEx && (
+        React.createElement(ExerciseProgressView,{"exName":progEx,"allWorkouts":allWorkouts||[],"onClose":() => setProgEx(null)})
       ),isMuscu && (w.exercises||[]).map((ex,ei) => {
         const isSS = ex.kind === "superset";
         const allSets = ex.items?.flatMap(it=>it.sets) || ex.sets || [];
         const exVol = (ex.items||[{name:ex.name,sets:ex.sets||[]}]).reduce((a,it)=>a+it.sets.reduce((b,s)=>b+(s.w||0)*(s.r||0),0),0);
         return (
           React.createElement(Card,{"key":ei,"style":{ marginBottom:10 }},isSS && React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }},React.createElement("span",{"style":{ background:T.purple+"18", color:T.purple, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }},"SUPERSET"),React.createElement("span",{"style":{ color:T.muted, fontSize:11 }},ex.items.map(it=>it.name).join(" + "))),(ex.items||[{name:ex.name,sets:ex.sets||[]}]).map((it,ii) => (
-              React.createElement("div",{"key":ii,"style":{ marginBottom:ii<(ex.items||[]).length-1?12:0 }},React.createElement("div",{"style":{ fontWeight:700, color:T.text, marginBottom:8, fontSize:isSS?13:14 }},isSS ? React.createElement(React.Fragment,null,React.createElement("span",{"style":{color:T.purple, fontFamily:mono}},String.fromCharCode(65+ii)),"·") : null,it.name),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, marginBottom:4 }},["#","Poids","Reps","Vol.","Repos"].map(h=>React.createElement("span",{"key":h,"style":{fontSize:10,fontWeight:600,color:T.mutedLt,letterSpacing:.5}},h))),it.sets.map((s,j) => (
+              React.createElement("div",{"key":ii,"style":{ marginBottom:ii<(ex.items||[]).length-1?12:0 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }},React.createElement("div",{"style":{ fontWeight:700, color:T.text, fontSize:isSS?13:14 }},isSS ? React.createElement(React.Fragment,null,React.createElement("span",{"style":{color:T.purple, fontFamily:mono}},String.fromCharCode(65+ii)),"·") : null,it.name),React.createElement("button",{"onClick":() => setProgEx(it.name),"style":{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:7,
+                      padding:"3px 8px", fontSize:12, cursor:"pointer", color:T.muted, fontFamily:font }},"📈")),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, marginBottom:4 }},["#","Poids","Reps","Vol.","Repos"].map(h=>React.createElement("span",{"key":h,"style":{fontSize:10,fontWeight:600,color:T.mutedLt,letterSpacing:.5}},h))),it.sets.map((s,j) => (
                   React.createElement("div",{"key":j,"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, padding:"6px 0", borderTop:`1px solid ${T.border}` }},React.createElement("span",{"style":{color:T.mutedLt,fontSize:13}},j+1),React.createElement("span",{"style":{fontSize:13}},s.w>0?`${s.w} kg`:"PDC"),React.createElement("span",{"style":{fontSize:13}},s.r),React.createElement("span",{"style":{fontSize:13,fontWeight:600,color:T.green,fontFamily:mono}},(s.w||0)*(s.r||0)||"—"),React.createElement("span",{"style":{fontSize:13,color:T.muted}},s.rest?`${s.rest}s`:"—"))
                 )))
             )),React.createElement("div",{"style":{ textAlign:"right", color:T.muted, fontSize:11, marginTop:8 }},"Vol:",React.createElement("span",{"style":{fontWeight:700,color:T.green,fontFamily:mono}},exVol,"kg")))
@@ -1177,7 +1252,7 @@ function WorkoutView({ data, setData }) {
       setData(d => ({ ...d, workouts: d.workouts.filter(x => x.id !== selId) }));
       setScreen("list");
     };
-    return React.createElement(WorkoutDetail,{"workout":w,"onBack":() => setScreen("list"),"onDelete":deleteWorkout});
+    return React.createElement(WorkoutDetail,{"workout":w,"onBack":() => setScreen("list"),"onDelete":deleteWorkout,"allWorkouts":data.workouts});
   }
 
   if (screen === "add") {
@@ -1555,6 +1630,133 @@ function FoodPicker({bank, favorites, onSelect, onClose, onAddCustom}) {
 }
 
 // ── Custom food form ───────────────────────────────────────────────────────────
+// ─── BARCODE SCANNER ──────────────────────────────────────────────────────────
+function BarcodeScanner({ onResult, onClose }) {
+  const [status,  setStatus]  = useState("idle"); // idle | scanning | loading | found | error
+  const [msg,     setMsg]     = useState("");
+  const [product, setProduct] = useState(null);
+  const videoRef = React.useRef(null);
+  const streamRef = React.useRef(null);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const startScan = async () => {
+    setStatus("scanning"); setMsg(""); setProduct(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode:"environment", width:{ideal:1280}, height:{ideal:720} }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+
+      // Use BarcodeDetector API (Android Chrome) or fallback
+      if ("BarcodeDetector" in window) {
+        const detector = new window.BarcodeDetector({ formats:["ean_13","ean_8","upc_a","upc_e","code_128"] });
+        const scan = async () => {
+          if (!videoRef.current || status === "loading") return;
+          try {
+            const barcodes = await detector.detect(videoRef.current);
+            if (barcodes.length > 0) {
+              const code = barcodes[0].rawValue;
+              stopCamera();
+              await fetchProduct(code);
+              return;
+            }
+          } catch {}
+          if (streamRef.current) requestAnimationFrame(scan);
+        };
+        videoRef.current.onloadedmetadata = () => { videoRef.current.play(); requestAnimationFrame(scan); };
+      } else {
+        // iOS fallback — manual barcode input
+        stopCamera();
+        setStatus("manual");
+        setMsg("Ton navigateur ne supporte pas le scan automatique. Saisis le code-barres manuellement.");
+      }
+    } catch(e) {
+      setStatus("error");
+      setMsg("Accès caméra refusé. Autorise l'accès dans les réglages de ton navigateur.");
+    }
+  };
+
+  const fetchProduct = async (barcode) => {
+    setStatus("loading"); setMsg(`Code : ${barcode}`);
+    try {
+      const res  = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+      const data = await res.json();
+      if (data.status === 1 && data.product) {
+        const p = data.product;
+        const n = p.nutriments || {};
+        const food = {
+          id:   "scan_" + Date.now(),
+          name: p.product_name || p.product_name_fr || "Produit scanné",
+          cat:  "Protéines", // défaut, modifiable
+          cal:  Math.round(n["energy-kcal_100g"] || n["energy-kcal"] || 0),
+          p:    +(n.proteins_100g || 0).toFixed(1),
+          c:    +(n.carbohydrates_100g || 0).toFixed(1),
+          f:    +(n.fat_100g || 0).toFixed(1),
+          unit: "g",
+        };
+        setProduct(food);
+        setStatus("found");
+        setMsg(`Produit trouvé !`);
+      } else {
+        setStatus("error");
+        setMsg(`Produit non trouvé (${barcode}). Essaie un autre produit ou ajoute-le manuellement.`);
+      }
+    } catch {
+      setStatus("error");
+      setMsg("Erreur de connexion. Vérifie ta connexion internet.");
+    }
+  };
+
+  const [manualCode, setManualCode] = useState("");
+
+  React.useEffect(() => { return () => stopCamera(); }, []);
+
+  return (
+    React.createElement("div",{"style":{ position:"fixed", inset:0, zIndex:400, background:"#000000CC",
+      display:"flex", flexDirection:"column", justifyContent:"flex-end" }},React.createElement("div",{"style":{ background:T.surface, borderRadius:"20px 20px 0 0", maxHeight:"90vh",
+        display:"flex", flexDirection:"column" }},React.createElement("div",{"style":{ padding:"16px 16px 12px", borderBottom:`1px solid ${T.border}`,
+          display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }},React.createElement("span",{"style":{ fontSize:15, fontWeight:700, color:T.text }},"📷 Scanner un produit"),React.createElement("button",{"onClick":() => { stopCamera(); onClose(); },"style":{ background:"none", border:"none", fontSize:20, color:T.muted, cursor:"pointer" }},"×")),React.createElement("div",{"style":{ padding:"16px", overflowY:"auto", flex:1 }},status === "scanning" && (
+            React.createElement("div",{"style":{ position:"relative", borderRadius:12, overflow:"hidden", marginBottom:14,
+              background:"#000", aspectRatio:"16/9" }},React.createElement("video",{"ref":videoRef,"autoPlay":true,"playsInline":true,"muted":true,"style":{ width:"100%", height:"100%", objectFit:"cover" }}),React.createElement("div",{"style":{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }},React.createElement("div",{"style":{ width:"70%", height:"35%", border:"2px solid #C9A84C",
+                  borderRadius:8, boxShadow:"0 0 0 2000px #00000066" }},React.createElement("div",{"style":{ width:"100%", height:2, background:"#C9A84C",
+                    animation:"scan 2s linear infinite" }}))),React.createElement("div",{"style":{ position:"absolute", bottom:10, left:0, right:0, textAlign:"center",
+                fontSize:12, color:"#fff", fontWeight:600 }},"Centre le code-barres dans le cadre"))
+          ),status === "loading" && (
+            React.createElement("div",{"style":{ textAlign:"center", padding:"24px 0" }},React.createElement("div",{"style":{ fontSize:32, marginBottom:8 }},"⏳"),React.createElement("div",{"style":{ fontSize:13, color:T.muted }},msg))
+          ),status === "error" && (
+            React.createElement("div",{"style":{ background:T.red+"18", border:`1px solid ${T.red}44`, borderRadius:10,
+              padding:"12px 14px", marginBottom:14 }},React.createElement("div",{"style":{ fontSize:13, color:T.red, fontWeight:600 }},msg))
+          ),status === "manual" && (
+            React.createElement("div",{"style":{ marginBottom:14 }},React.createElement("div",{"style":{ fontSize:12, color:T.muted, marginBottom:10, lineHeight:1.5 }},msg),React.createElement("div",{"style":{ display:"flex", gap:8 }},React.createElement("input",{"value":manualCode,"onChange":e=>setManualCode(e.target.value),"placeholder":"Ex: 3017620422003","style":{ flex:1, background:T.bg, border:`1px solid ${T.border}`, borderRadius:8,
+                    padding:"9px 12px", fontSize:13, color:T.text, fontFamily:font, outline:"none" }}),React.createElement(Btn,{"onClick":() => manualCode && fetchProduct(manualCode),"size":"sm"},"OK")))
+          ),status === "found" && product && (
+            React.createElement("div",null,React.createElement("div",{"style":{ background:T.green+"18", border:`1px solid ${T.green}44`, borderRadius:10,
+                padding:"12px 14px", marginBottom:14 }},React.createElement("div",{"style":{ fontSize:13, fontWeight:700, color:T.green, marginBottom:2 }},"✅",msg),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},"Vérifie les valeurs avant d'enregistrer")),React.createElement("div",{"style":{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:12, padding:14, marginBottom:14 }},React.createElement("div",{"style":{ fontSize:14, fontWeight:700, color:T.ink, marginBottom:10 }},product.name),React.createElement("div",{"style":{ fontSize:11, color:T.muted, marginBottom:8 }},"Valeurs pour 100g"),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, minWidth:0 }},[["Calories",product.cal,"kcal"],["Protéines",product.p,"g"],
+                    ["Glucides",product.c,"g"],["Lipides",product.f,"g"]].map(([lbl,val,unit])=>(
+                    React.createElement("div",{"key":lbl,"style":{ background:T.surface, borderRadius:8, padding:"8px 10px",
+                      border:`1px solid ${T.border}` }},React.createElement("div",{"style":{ fontSize:9, color:T.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:2 }},lbl),React.createElement("div",{"style":{ fontFamily:mono, fontSize:15, fontWeight:700, color:T.ink }},val,React.createElement("span",{"style":{ fontSize:10, color:T.muted, fontWeight:400 }},unit)))
+                  ))),React.createElement("div",{"style":{ marginTop:10 }},React.createElement("div",{"style":{ fontSize:10, color:T.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }},"Catégorie"),React.createElement("div",{"style":{ display:"flex", flexWrap:"wrap", gap:5 }},FOOD_CATS.filter(c=>c!=="Tous"&&c!=="Favoris").map(c=>(
+                      React.createElement("button",{"key":c,"onClick":()=>setProduct(p=>({...p,cat:c})),"style":{ padding:"4px 9px", borderRadius:7,
+                          border:`1px solid ${product.cat===c?T.gold:T.border}`,
+                          background:product.cat===c?T.goldLt+"33":"transparent",
+                          color:product.cat===c?T.goldDk:T.muted,
+                          fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:font }},c)
+                    ))))),React.createElement("div",{"style":{ display:"flex", gap:8 }},React.createElement(Btn,{"onClick":() => { onResult(product); stopCamera(); onClose(); },"style":{ flex:1 }},"✅ Ajouter à la banque"),React.createElement("button",{"onClick":() => { setStatus("idle"); setProduct(null); },"style":{ padding:"10px 14px", border:`1px solid ${T.border}`, borderRadius:10,
+                    background:"transparent", color:T.muted, fontSize:13, cursor:"pointer", fontFamily:font }},"Scanner un autre")))
+          ),(status === "idle" || status === "error") && (
+            React.createElement("div",{"style":{ textAlign:"center", padding:"16px 0" }},React.createElement("div",{"style":{ fontSize:40, marginBottom:12 }},"📷"),React.createElement("div",{"style":{ fontSize:13, color:T.muted, marginBottom:20, lineHeight:1.5 }},"Scanne le code-barres d'un produit pour récupérer automatiquement ses valeurs nutritionnelles depuis Open Food Facts."),React.createElement(Btn,{"onClick":startScan,"style":{ width:"100%" }},"Démarrer le scan"),React.createElement("button",{"onClick":() => { setStatus("manual"); setMsg("Saisis le code-barres manuellement."); },"style":{ marginTop:10, background:"none", border:"none", color:T.muted,
+                  fontSize:12, cursor:"pointer", fontFamily:font, textDecoration:"underline" }},"Saisir le code manuellement"))
+          ))),React.createElement("style",null,`@keyframes scan{0%{margin-top:0}50%{margin-top:calc(100% - 2px)}100%{margin-top:0}}`))
+  );
+}
+
 function CustomFoodForm({onSave, onBack}) {
   const [f, setF] = useState({name:"",cat:"Protéines",cal:"",p:"",c:"",ff:""});
   return (
@@ -1617,6 +1819,7 @@ function CalView({data, setData, profile, calorieTarget}) {
   const [tab,        setTab]        = useState("today");
   const [newMeal,    setNewMeal]    = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const nutr  = data.nutrition || NUTRITION_SEED;
   const bank  = nutr.foodBank  || FOOD_BANK_SEED;
@@ -1714,7 +1917,8 @@ function CalView({data, setData, profile, calorieTarget}) {
             React.createElement("div",{"style":{textAlign:"center",padding:"32px 0",color:T.muted,fontSize:13}},"Aucun repas enregistré aujourd'hui.")
           ),React.createElement("div",{"style":{marginTop:8}},React.createElement(Btn,{"onClick":()=>setNewMeal(true)},"+ Nouveau repas")))
       ),tab==="history"&&React.createElement(HistoryTab,{"days":days,"bank":bank,"goals":goals}),tab==="bank"&&(
-        React.createElement(React.Fragment,null,React.createElement("div",{"style":{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}},React.createElement("div",{"style":{fontSize:13,color:T.muted}},bank.length,"aliments"),React.createElement(Btn,{"onClick":()=>setShowCustom(v=>!v),"size":"sm"},showCustom?"Annuler":"+ Nouvel aliment")),showCustom&&React.createElement(Card,{"style":{marginBottom:14}},React.createElement(CustomFoodForm,{"onSave":f=>{addToBank(f);setShowCustom(false);},"onBack":()=>setShowCustom(false)})),FOOD_CATS.filter(c=>c!=="Tous"&&c!=="Favoris").map(cat=>{
+        React.createElement(React.Fragment,null,React.createElement("div",{"style":{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}},React.createElement("div",{"style":{fontSize:13,color:T.muted}},bank.length,"aliments"),React.createElement("div",{"style":{display:"flex",gap:6}},React.createElement("button",{"onClick":()=>setShowScanner(true),"style":{background:T.blue,border:"none",borderRadius:8,padding:"7px 12px",
+                  color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:font}},"📷 Scanner"),React.createElement(Btn,{"onClick":()=>setShowCustom(v=>!v),"size":"sm"},showCustom?"Annuler":"+ Nouvel aliment"))),showScanner && React.createElement(BarcodeScanner,{"onResult":f=>{addToBank(f);setShowScanner(false);},"onClose":()=>setShowScanner(false)}),showCustom&&React.createElement(Card,{"style":{marginBottom:14}},React.createElement(CustomFoodForm,{"onSave":f=>{addToBank(f);setShowCustom(false);},"onBack":()=>setShowCustom(false)})),FOOD_CATS.filter(c=>c!=="Tous"&&c!=="Favoris").map(cat=>{
             const items=bank.filter(f=>f.cat===cat); if(!items.length) return null;
             return (
               React.createElement("div",{"key":cat,"style":{marginBottom:16}},React.createElement("div",{"style":{fontSize:11,fontWeight:600,letterSpacing:.8,color:T.mutedLt,textTransform:"uppercase",marginBottom:8}},cat),items.map((f,i)=>(
@@ -2955,8 +3159,20 @@ function HabitsView({ data, setData }) {
   const [newH,    setNewH]   = useState({ name:"", icon:"💧", color:T.blue });
   const [histHabit, setHistHabit] = useState(null); // id of habit to drill into, or null = global
 
-  const days7    = lastNDays(7);
   const days30   = lastNDays(30);
+
+  // Semaine courante — toujours du lundi au dimanche
+  const currentWeek = (() => {
+    const d = new Date(TODAY+"T12:00");
+    const day = d.getDay(); // 0=dim, 1=lun...
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return Array.from({length:7}, (_, i) => {
+      const dd = new Date(monday);
+      dd.setDate(monday.getDate() + i);
+      return dd.toISOString().slice(0,10);
+    });
+  })();
   const todayStr = today();
 
   const mutHabits = (fn) => setData(d => ({ ...d, habits: fn(d.habits || HABITS_SEED) }));
@@ -3029,13 +3245,13 @@ function HabitsView({ data, setData }) {
              `${todayTotal-todayDone} restante${todayTotal-todayDone>1?"s":""}`),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},new Date(TODAY+"T12:00").toLocaleDateString("fr",{weekday:"long",day:"numeric",month:"long"})))),habits.length === 0 ? (
         React.createElement(Card,{"style":{ textAlign:"center", padding:"32px 20px", color:T.muted, fontSize:13 }},"Aucune habitude. Ajoutes-en une !")
       ) : (
-        React.createElement(Card,{"style":{ marginBottom:14 },"pad":14},React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr repeat(7,32px)", gap:4, marginBottom:8 }},React.createElement("div",null),days7.map(d=>(
+        React.createElement(Card,{"style":{ marginBottom:14 },"pad":14},React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr repeat(7,32px)", gap:4, marginBottom:8 }},React.createElement("div",null),currentWeek.map(d=>(
               React.createElement("div",{"key":d,"style":{ textAlign:"center" }},React.createElement("div",{"style":{ fontSize:9, color:d===todayStr?T.text:T.mutedLt, fontWeight:d===todayStr?700:400 }},new Date(d+"T12:00").toLocaleDateString("fr",{weekday:"short"}).slice(0,2).toUpperCase()),React.createElement("div",{"style":{ fontSize:9, color:d===todayStr?T.text:T.mutedLt, fontWeight:d===todayStr?700:400 }},d.slice(8)))
             ))),habits.map((h,i)=>(
             React.createElement("div",{"key":h.id,"style":{ display:"grid", gridTemplateColumns:"1fr repeat(7,32px)", gap:4,
               alignItems:"center", paddingTop:i>0?8:0, marginTop:i>0?8:0,
               borderTop:i>0?`1px solid ${T.border}`:"none" }},React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:6, minWidth:0 }},React.createElement("span",{"style":{ fontSize:16, flexShrink:0 }},h.icon),React.createElement("span",{"style":{ fontSize:12, fontWeight:600, color:T.ink, overflow:"hidden",
-                  textOverflow:"ellipsis", whiteSpace:"nowrap" }},h.name)),days7.map(d=>{
+                  textOverflow:"ellipsis", whiteSpace:"nowrap" }},h.name)),currentWeek.map(d=>{
                 const done=!!h.logs[d];
                 return (
                   React.createElement("div",{"key":d,"onClick":()=>toggle(h.id,d),"style":{ width:32, height:32, borderRadius:8, cursor:"pointer", display:"flex",
@@ -3049,7 +3265,7 @@ function HabitsView({ data, setData }) {
         React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }},habits.map(h=>{
             const s=streak(h);
             const total=Object.values(h.logs).filter(Boolean).length;
-            const week=days7.filter(d=>h.logs[d]).length;
+            const week=currentWeek.filter(d=>h.logs[d]).length;
             return (
               React.createElement(Card,{"key":h.id,"pad":14},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }},React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:5 }},React.createElement("span",{"style":{ fontSize:16 }},h.icon),React.createElement("span",{"style":{ fontSize:12, fontWeight:700, color:T.ink }},h.name)),React.createElement("button",{"onClick":()=>deleteHabit(h.id),"style":{ background:"none", border:"none", color:T.mutedLt, cursor:"pointer", fontSize:14, padding:0 }},"×")),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", marginBottom:6 }},React.createElement("div",null,React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:18, color:h.color }},s),React.createElement("div",{"style":{ fontSize:9, color:T.muted }},"🔥 streak")),React.createElement("div",{"style":{ textAlign:"right" }},React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:18, color:T.muted }},week,"/7"),React.createElement("div",{"style":{ fontSize:9, color:T.muted }},"cette sem."))),React.createElement(Bar,{"val":week,"total":7,"color":h.color,"h":4}),React.createElement("div",{"style":{ fontSize:10, color:T.mutedLt, marginTop:5 }},total,"jours au total"))
             );
@@ -3241,7 +3457,6 @@ function PersistentApp(){
   const [data,setData]=useState(saved?.data||{...SEED,nutrition:{...NUTRITION_SEED,foodBank:FOOD_BANK_SEED},habits:HABITS_SEED,templates:[],sleep:[]});
   const [profile,setProfile]=useState(saved?.profile||USER_PROFILE_SEED);
   React.useEffect(()=>{saveState({data,profile,theme});},[data,profile,theme]);
-  // Update T tokens when theme changes
   React.useEffect(()=>{ Object.assign(T, THEMES[theme]||THEMES.light); },[theme]);
   const calorieTarget=calculateCalorieTarget(profile);
   const views={
