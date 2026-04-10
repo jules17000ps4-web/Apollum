@@ -344,31 +344,203 @@ function Spark({ values, color = T.gold, h = 36 }) {
 }
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
-function Home({ data, setTab, profile, calorieTarget }) {
-  const nutr     = data.nutrition || NUTRITION_SEED;
-  const bank     = nutr.foodBank  || FOOD_BANK_SEED;
-  const todayDay = (nutr.days||[]).find(d => d.date === today()) || { meals:[] };
-  const totKcal  = dayTotals(todayDay.meals, bank).kcal;
-  const totProt  = dayTotals(todayDay.meals, bank).p;
-  // Use profile-derived targets as single source of truth
-  const goals    = calorieTarget || { kcal:2400, protein:155 };
-  const latest   = data.body[0], prev = data.body[1];
-  const last     = data.workouts[0];
-  const wDelta   = latest&&prev ? (latest.weight-prev.weight).toFixed(1) : null;
-  const cfg      = last ? ACTIVITY_TYPES[last.type] : null;
-  const phase    = profile ? PHASES.find(p=>p.id===profile.phase) : null;
+// ─── CITATIONS ────────────────────────────────────────────────────────────────
+const QUOTES = [
+  { q:"La discipline est le pont entre les objectifs et les accomplissements.", a:"Jim Rohn" },
+  { q:"Le succès n'est pas final, l'échec n'est pas fatal : c'est le courage de continuer qui compte.", a:"Winston Churchill" },
+  { q:"Ton corps peut supporter presque n'importe quoi. C'est ton esprit que tu dois convaincre.", a:"Inconnu" },
+  { q:"La douleur que tu ressens aujourd'hui sera la force que tu ressentiras demain.", a:"Inconnu" },
+  { q:"Ne limite pas tes défis. Défie tes limites.", a:"Inconnu" },
+  { q:"Le seul mauvais entraînement est celui que tu n'as pas fait.", a:"Inconnu" },
+  { q:"Les champions ne sont pas faits dans les salles de sport. Ils sont faits de quelque chose qu'ils ont en eux.", a:"Muhammad Ali" },
+  { q:"Si ça ne te challenge pas, ça ne te changera pas.", a:"Fred DeVito" },
+  { q:"Soulève lourd, mange bien, dors suffisamment. Répète.", a:"Inconnu" },
+  { q:"Ce que tu manges en privé se voit en public.", a:"Inconnu" },
+  { q:"La motivation te fait démarrer. L'habitude te fait continuer.", a:"Jim Ryun" },
+  { q:"Chaque répétition t'amène plus près de ton objectif.", a:"Inconnu" },
+  { q:"Le corps accomplit ce que l'esprit croit.", a:"Napoleon Hill" },
+  { q:"Sois plus fort que tes excuses.", a:"Inconnu" },
+  { q:"Les résultats demandent des sacrifices. Es-tu prêt ?", a:"Inconnu" },
+  { q:"La progression, pas la perfection.", a:"Inconnu" },
+  { q:"Un an de travail acharné bat une vie de vœux pieux.", a:"Inconnu" },
+  { q:"Prends soin de ton corps. C'est le seul endroit où tu as à vivre.", a:"Jim Rohn" },
+  { q:"La santé est la vraie richesse, pas les pièces d'or et d'argent.", a:"Mahatma Gandhi" },
+  { q:"Faire de l'exercice est une célébration de ce que ton corps peut faire.", a:"Inconnu" },
+  { q:"L'entraînement c'est 10% physique et 90% mental.", a:"Inconnu" },
+  { q:"Chaque expert a été un débutant.", a:"Inconnu" },
+  { q:"Ce n'est pas la force qui gagne, c'est la persévérance.", a:"Inconnu" },
+  { q:"L'endurance n'est pas seulement la capacité de supporter une situation difficile, mais de la transformer.", a:"Inconnu" },
+  { q:"Le secret du succès c'est de commencer.", a:"Mark Twain" },
+  { q:"Petit à petit, l'oiseau fait son nid.", a:"Proverbe" },
+  { q:"Vous ne pouvez pas retourner en arrière et changer le début, mais vous pouvez commencer là où vous êtes.", a:"C.S. Lewis" },
+  { q:"L'action est le remède fondamental à tout stress.", a:"Inconnu" },
+  { q:"Le temps que tu consacres à ta santé, tu ne le consacres pas à la maladie.", a:"Inconnu" },
+  { q:"Les grands résultats nécessitent de grands ambitions.", a:"Heraclite" },
+  { q:"Si tu veux quelque chose que tu n'as jamais eu, fais quelque chose que tu n'as jamais fait.", a:"Inconnu" },
+  { q:"L'effort d'aujourd'hui est le résultat de demain.", a:"Inconnu" },
+  { q:"La fatigue est temporaire. Les regrets durent toujours.", a:"Inconnu" },
+  { q:"Pas de douleur, pas de gain. Pas d'effort, pas de changement.", a:"Inconnu" },
+  { q:"Ce qui ne te tue pas te rend plus fort.", a:"Friedrich Nietzsche" },
+  { q:"Le plus grand accomplissement est de se relever après chaque chute.", a:"Vince Lombardi" },
+  { q:"Ne comptez pas les jours, faites que les jours comptent.", a:"Muhammad Ali" },
+  { q:"La force ne vient pas des capacités physiques. Elle vient d'une volonté indomptable.", a:"Mahatma Gandhi" },
+  { q:"Un corps en bonne santé est une chambre pour l'âme, un corps malade est une prison.", a:"Francis Bacon" },
+  { q:"La santé, c'est la vie en silence.", a:"Francis Ponge" },
+  { q:"Mange pour vivre, ne vis pas pour manger.", a:"Socrate" },
+  { q:"Que ton aliment soit ton seul médicament.", a:"Hippocrate" },
+  { q:"Un esprit sain dans un corps sain.", a:"Juvénal" },
+  { q:"Votre niveau de succès dépend rarement de vos capacités et davantage de votre désir de réussir.", a:"Dan Waldschmidt" },
+  { q:"La cohérence est ce qui transforme la moyenne en excellence.", a:"Inconnu" },
+  { q:"La discipline pèse des grammes, le regret pèse des tonnes.", a:"Inconnu" },
+  { q:"Les petites actions quotidiennes créent de grands résultats à long terme.", a:"Inconnu" },
+  { q:"Commence là où tu es. Utilise ce que tu as. Fais ce que tu peux.", a:"Arthur Ashe" },
+  { q:"L'excellence est une habitude, non un acte.", a:"Aristote" },
+  { q:"Il faut toujours viser la lune, car même en cas d'échec on atterrit dans les étoiles.", a:"Oscar Wilde" },
+  { q:"Crois en toi et tout devient possible.", a:"Inconnu" },
+  { q:"Le moment présent est le seul moment disponible pour vivre.", a:"Thich Nhat Hanh" },
+  { q:"Vis comme si tu allais mourir demain. Apprends comme si tu allais vivre toujours.", a:"Gandhi" },
+  { q:"La force ne vient pas de gagner. Tes luttes développent ta force.", a:"Arnold Schwarzenegger" },
+  { q:"Chaque accomplissement commence par la décision d'essayer.", a:"John F. Kennedy" },
+  { q:"Faire les choses difficiles quand c'est difficile — c'est la définition de la discipline.", a:"Inconnu" },
+  { q:"Tu es plus courageux que tu ne le crois, plus fort que tu ne le sembles.", a:"A.A. Milne" },
+  { q:"Le succès appartient à ceux qui se lèvent tôt.", a:"Proverbe" },
+  { q:"Chaque jour est une nouvelle chance d'améliorer ta vie.", a:"Inconnu" },
+  { q:"Si tu veux changer ton corps, commence par changer tes habitudes.", a:"Inconnu" },
+  { q:"L'investissement dans ton bien-être est le plus rentable de tous.", a:"Inconnu" },
+  { q:"Ton futur te remerciera pour les efforts d'aujourd'hui.", a:"Inconnu" },
+  { q:"La régularité bat le talent quand le talent n'est pas régulier.", a:"Inconnu" },
+  { q:"Le corps atteint ce que l'esprit croit être possible.", a:"Inconnu" },
+  { q:"Sois patient avec toi-même. Rien dans la nature ne fleurit toute l'année.", a:"Inconnu" },
+  { q:"Les habitudes sont des chaînes trop légères pour être senties jusqu'à ce qu'elles soient trop lourdes pour être brisées.", a:"Warren Buffett" },
+  { q:"La vie est trop courte pour ne pas être en bonne santé.", a:"Inconnu" },
+  { q:"Ce que tu fais aujourd'hui peut améliorer tous tes lendemains.", a:"Ralph Marston" },
+  { q:"Le meilleur projet sur lequel tu puisses travailler, c'est toi-même.", a:"Inconnu" },
+  { q:"L'effort est la chose la plus précieuse que tu puisses offrir.", a:"Inconnu" },
+  { q:"Chaque journée est une occasion de devenir meilleur qu'hier.", a:"Inconnu" },
+  { q:"Il n'y a pas de raccourci vers un endroit qui en vaut la peine.", a:"Beverly Sills" },
+  { q:"Le travail dur bat le talent quand le talent ne travaille pas dur.", a:"Tim Notke" },
+  { q:"Ce n'est pas ce que tu es capable de faire, c'est ce que tu es prêt à faire.", a:"Inconnu" },
+  { q:"La force n'est pas l'absence de faiblesse, c'est le courage de les surmonter.", a:"Inconnu" },
+  { q:"L'entraînement d'aujourd'hui est le fondement de demain.", a:"Inconnu" },
+  { q:"Chaque kilo soulevé est une victoire sur hier.", a:"Inconnu" },
+  { q:"Mange pour performer, pas seulement pour te remplir.", a:"Inconnu" },
+  { q:"Le repos fait partie de l'entraînement.", a:"Inconnu" },
+  { q:"Hydrate-toi. Dors bien. Bouge souvent. C'est la formule.", a:"Inconnu" },
+  { q:"Le succès n'est pas une destination, c'est un voyage quotidien.", a:"Inconnu" },
+  { q:"Fais aujourd'hui ce que les autres ne feront pas, pour avoir demain ce que les autres n'auront pas.", a:"Jerry Rice" },
+  { q:"La ténacité : travaille dur pendant que les autres se reposent.", a:"Inconnu" },
+  { q:"Deviens la version de toi-même que tu admires.", a:"Inconnu" },
+  { q:"Le premier pas est toujours le plus difficile.", a:"Inconnu" },
+  { q:"Rends-toi fier.", a:"Inconnu" },
+  { q:"Repousse tes limites, non pour les casser, mais pour les redéfinir.", a:"Inconnu" },
+  { q:"La transformation commence le jour où tu décides que tu en as assez.", a:"Inconnu" },
+  { q:"Dors comme un champion. Mange comme un champion. Entraîne-toi comme un champion.", a:"Inconnu" },
+  { q:"Le changement est difficile au début, désordonné au milieu et magnifique à la fin.", a:"Robin Sharma" },
+  { q:"Ce que tu mesures, tu peux l'améliorer.", a:"Peter Drucker" },
+  { q:"Les habitudes gagnantes commencent par des choix gagnants.", a:"Inconnu" },
+  { q:"Une heure d'exercice par jour, c'est 4% de ta journée pour une vie meilleure.", a:"Inconnu" },
+  { q:"La persévérance est l'effort continu malgré la difficulté.", a:"Inconnu" },
+  { q:"Crois au processus.", a:"Inconnu" },
+  { q:"Peu importe la lenteur, tu avances toujours plus vite que quelqu'un qui n'essaie pas.", a:"Inconnu" },
+  { q:"Les grandes choses ne viennent jamais de zones de confort.", a:"Neil Strauss" },
+  { q:"Chaque séance compte. Chaque repas compte. Chaque choix compte.", a:"Inconnu" },
+  { q:"La transformation physique commence dans la tête.", a:"Inconnu" },
+  { q:"Fais de ta santé une priorité, pas une option.", a:"Inconnu" },
+  { q:"Les résultats sont proportionnels aux efforts fournis.", a:"Inconnu" },
+  { q:"Le corps suit l'esprit. Forme d'abord ton esprit.", a:"Inconnu" },
+  { q:"Chaque entraînement manqué est une occasion ratée de progresser.", a:"Inconnu" },
+  { q:"La volonté peut tout.", a:"Virgile" },
+  { q:"L'alimentation est la première médecine.", a:"Inconnu" },
+  { q:"Investis en toi-même. Ton corps est ton capital.", a:"Inconnu" },
+];
+
+// Get today's quote based on day of year
+const getDailyQuote = () => {
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const diff = new Date() - start;
+  const dayOfYear = Math.floor(diff / 86400000);
+  return QUOTES[dayOfYear % QUOTES.length];
+};
+
+// ─── HOME ─────────────────────────────────────────────────────────────────────
+function Home({ data, setTab, setData, profile, calorieTarget }) {
+  const nutr      = data.nutrition || NUTRITION_SEED;
+  const bank      = nutr.foodBank  || FOOD_BANK_SEED;
+  const todayDay  = (nutr.days||[]).find(d => d.date === today()) || { meals:[] };
+  const tot       = dayTotals(todayDay.meals, bank);
+  const goals     = calorieTarget || { kcal:2400, protein:155 };
+  const latest    = data.body[0];
+  const prev      = data.body[1];
+  const last      = data.workouts[0];
+  const wDelta    = latest&&prev ? (latest.weight-prev.weight).toFixed(1) : null;
+  const cfg       = last ? ACTIVITY_TYPES[last.type] : null;
+  const phase     = profile ? PHASES.find(p=>p.id===profile.phase) : null;
+  const habits    = data.habits || HABITS_SEED;
+  const todayStr  = today();
+  const quote     = getDailyQuote();
+
+  // Water
+  const waterData  = nutr.water || {};
+  const waterToday = waterData[todayStr] || 0;
+  const waterBonus = (data.workouts||[]).find(w=>w.date===todayStr) ? 500 : 0;
+  const waterGoal  = Math.round((profile?.weight||70) * 35 + waterBonus);
+
+  // Toggle habit from home
+  const toggleHabit = (habitId) => {
+    setData(d => ({
+      ...d,
+      habits: (d.habits||HABITS_SEED).map(h =>
+        h.id===habitId ? {...h, logs:{...h.logs,[todayStr]:!h.logs[todayStr]}} : h
+      )
+    }));
+  };
+
+  // Contextual message
+  const todayWorkout = (data.workouts||[]).find(w => w.date === todayStr);
+  const habitsDone   = habits.filter(h=>h.logs[todayStr]).length;
+  const contextMsg   = todayWorkout
+    ? `Séance ${todayWorkout.name} enregistrée 💪`
+    : habitsDone === habits.length && habits.length > 0
+    ? "Toutes les habitudes complétées ! 🎉"
+    : "Bonne journée ! 🎯";
 
   return (
-    React.createElement("div",null,React.createElement("div",{"style":{ marginBottom:20 }},React.createElement("div",{"style":{ color:T.mutedLt, fontSize:11, fontWeight:500, marginBottom:4, letterSpacing:1.5, textTransform:"uppercase" }},new Date(TODAY+"T12:00").toLocaleDateString("fr",{weekday:"long",day:"numeric",month:"long",year:"numeric"})),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }},React.createElement("div",null,React.createElement("h1",{"style":{ fontSize:32, fontWeight:600, color:T.text, letterSpacing:"-.5px", fontFamily:serif, lineHeight:1.1 }},"Apollum"),React.createElement("div",{"style":{ fontSize:13, color:T.muted, marginTop:2 }},"Bonjour 👋")),phase && (
+    React.createElement("div",null,React.createElement("div",{"style":{ marginBottom:16 }},React.createElement("div",{"style":{ color:T.mutedLt, fontSize:11, fontWeight:500, marginBottom:4,
+          letterSpacing:1.5, textTransform:"uppercase" }},new Date(TODAY+"T12:00").toLocaleDateString("fr",{weekday:"long",day:"numeric",month:"long",year:"numeric"})),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }},React.createElement("div",null,React.createElement("h1",{"style":{ fontSize:30, fontWeight:600, color:T.text, fontFamily:serif,
+              lineHeight:1.1, letterSpacing:"-.5px" }},"Apollum"),React.createElement("div",{"style":{ fontSize:12, color:T.muted, marginTop:3 }},contextMsg)),phase && (
             React.createElement("button",{"onClick":()=>setTab("profil"),"style":{ background:`linear-gradient(135deg,${T.goldLt}44,${T.gold}22)`,
                 color:T.goldDk, border:`1px solid ${T.gold}66`,
                 borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700,
-                cursor:"pointer", fontFamily:font, letterSpacing:.3 }},phase.icon,phase.label)
-          )),React.createElement("div",{"style":{ marginTop:14, height:1, background:`linear-gradient(90deg,${T.gold},${T.goldLt},transparent)` }})),React.createElement(Card,{"style":{ marginBottom:12 },"onClick":() => setTab("calories")},React.createElement("div",{"style":{ display:"flex", gap:18, alignItems:"center" }},React.createElement("div",{"style":{ position:"relative", flexShrink:0 }},React.createElement(Ring,{"val":totKcal,"total":goals.kcal,"size":68,"sw":4,"color":totKcal>goals.kcal?T.red:T.green}),React.createElement("div",{"style":{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }},React.createElement("span",{"style":{ fontSize:14, fontWeight:700, fontFamily:mono }},Math.round(pct(totKcal,goals.kcal)*100)),React.createElement("span",{"style":{ fontSize:9, color:T.muted }},"%"))),React.createElement("div",{"style":{ flex:1 }},React.createElement(Label,null,"Calories aujourd'hui"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:5, marginBottom:6 }},React.createElement("span",{"style":{ fontSize:24, fontWeight:700, fontFamily:mono }},totKcal),React.createElement("span",{"style":{ color:T.muted, fontSize:13 }},"/",goals.kcal,"kcal")),React.createElement("div",{"style":{ display:"flex", gap:10, marginBottom:6 }},React.createElement("span",{"style":{ fontSize:12, color:T.blue }},"Prot.",React.createElement("strong",{"style":{ fontFamily:mono }},totProt,"g")),React.createElement("span",{"style":{ fontSize:12, color:T.muted }},"obj.",goals.protein,"g")),React.createElement(Bar,{"val":totProt,"total":goals.protein,"color":T.blue,"h":3})))),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }},React.createElement(Card,{"onClick":() => setTab("profil")},React.createElement(Label,null,"Poids"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4, marginBottom:4 }},React.createElement("span",{"style":{ fontSize:22, fontWeight:700, fontFamily:mono }},latest?.weight),React.createElement("span",{"style":{ color:T.muted, fontSize:12 }},"kg")),wDelta!==null && React.createElement("div",{"style":{ fontSize:12, color:+wDelta<0?T.green:T.red }},+wDelta<0?"▼":"▲",Math.abs(wDelta),"kg"),profile?.targetWeight && latest?.weight && (
-            React.createElement("div",{"style":{ fontSize:11, color:T.muted, marginTop:2 }},"Objectif:",React.createElement("span",{"style":{ color:T.text, fontWeight:600, fontFamily:mono }},profile.targetWeight,"kg"),React.createElement("span",{"style":{ marginLeft:6, color: +profile.targetWeight < latest.weight ? T.red : T.green }},"(",(+profile.targetWeight - latest.weight).toFixed(1),"kg)"))
-          ),React.createElement("div",{"style":{ marginTop:6 }},React.createElement(Spark,{"values":data.body.slice().reverse().map(b=>b.weight),"color":T.mutedLt,"h":24}))),React.createElement(Card,{"onClick":() => setTab("workout")},React.createElement(Label,null,"Dernière séance"),last ? React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }},React.createElement("span",{"style":{ fontSize:18 }},cfg?.icon),React.createElement("span",{"style":{ fontWeight:700, color:T.text, fontSize:14 }},last.name)),React.createElement(Pill,{"color":cfg?.color||T.blue},last.type),React.createElement("div",{"style":{ color:T.muted, fontSize:12, marginTop:8 }},last.duration,"min")) : React.createElement("div",{"style":{ color:T.muted, fontSize:13 }},"Aucune séance"))),React.createElement(Card,null,React.createElement(Label,null,"Records personnels"),data.prs.filter(pr => pr.value && String(pr.value).trim() !== "").map((pr,i,arr) => (
-          React.createElement("div",{"key":pr.id||i},i>0 && React.createElement("div",{"style":{ height:1, background:T.border, margin:"8px 0" }}),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center" }},React.createElement("span",{"style":{ fontSize:13, color:T.ink }},pr.exercise),React.createElement("div",null,React.createElement("span",{"style":{ fontWeight:700, fontFamily:mono, fontSize:15 }},pr.value),React.createElement("span",{"style":{ color:T.muted, fontSize:11, marginLeft:4 }},pr.unit))))
-        ))))
+                cursor:"pointer", fontFamily:font, letterSpacing:.3, flexShrink:0, marginTop:4 }},phase.icon,phase.label)
+          )),React.createElement("div",{"style":{ marginTop:12, height:1,
+          background:`linear-gradient(90deg,${T.gold},${T.goldLt},transparent)` }})),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }},React.createElement(Card,{"onClick":() => setTab("calories"),"style":{ marginBottom:0 },"pad":13},React.createElement(Label,null,"Calories"),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }},React.createElement("div",{"style":{ position:"relative", flexShrink:0 }},React.createElement(Ring,{"val":tot.kcal,"total":goals.kcal,"size":46,"sw":4,"color":tot.kcal>goals.kcal?T.red:T.gold}),React.createElement("div",{"style":{ position:"absolute", inset:0, display:"flex",
+                alignItems:"center", justifyContent:"center" }},React.createElement("span",{"style":{ fontSize:10, fontWeight:700, fontFamily:mono }},Math.min(Math.round(pct(tot.kcal,goals.kcal)*100),999),"%"))),React.createElement("div",null,React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:17, color:T.text }},tot.kcal),React.createElement("div",{"style":{ fontSize:10, color:T.muted }},"/",goals.kcal,"kcal"))),React.createElement(Bar,{"val":tot.kcal,"total":goals.kcal,"color":tot.kcal>goals.kcal?T.red:T.gold,"h":4})),React.createElement(Card,{"onClick":() => setTab("calories"),"style":{ marginBottom:0 },"pad":13},React.createElement(Label,null,"Hydratation"),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }},React.createElement("div",{"style":{ position:"relative", flexShrink:0 }},React.createElement(Ring,{"val":waterToday,"total":waterGoal,"size":46,"sw":4,"color":waterToday>=waterGoal?T.green:T.blue}),React.createElement("div",{"style":{ position:"absolute", inset:0, display:"flex",
+                alignItems:"center", justifyContent:"center" }},React.createElement("span",{"style":{ fontSize:10, fontWeight:700, fontFamily:mono }},Math.min(Math.round(pct(waterToday,waterGoal)*100),999),"%"))),React.createElement("div",null,React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:17, color:T.text }},waterToday>=1000?`${(waterToday/1000).toFixed(1)}L`:`${waterToday}ml`),React.createElement("div",{"style":{ fontSize:10, color:T.muted }},"/",waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`))),React.createElement(Bar,{"val":waterToday,"total":waterGoal,"color":waterToday>=waterGoal?T.green:T.blue,"h":4}))),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }},React.createElement(Card,{"onClick":() => setTab("profil"),"pad":13,"style":{ marginBottom:0 }},React.createElement(Label,null,"Poids"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4, marginBottom:4 }},React.createElement("span",{"style":{ fontSize:22, fontWeight:700, fontFamily:mono }},latest?.weight || "—"),React.createElement("span",{"style":{ color:T.muted, fontSize:12 }},"kg")),wDelta!==null && (
+            React.createElement("div",{"style":{ fontSize:12, color:+wDelta<0?T.green:T.red }},+wDelta<0?"▼":"▲",Math.abs(wDelta),"kg")
+          ),React.createElement("div",{"style":{ marginTop:6 }},React.createElement(Spark,{"values":data.body.slice().reverse().map(b=>b.weight),"color":T.mutedLt,"h":22}))),React.createElement(Card,{"onClick":() => setTab("workout"),"pad":13,"style":{ marginBottom:0 }},React.createElement(Label,null,"Dernière séance"),last ? React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:5, marginBottom:5 }},React.createElement("span",{"style":{ fontSize:16 }},cfg?.icon),React.createElement("span",{"style":{ fontWeight:700, color:T.text, fontSize:13,
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }},last.name)),React.createElement(Pill,{"color":cfg?.color||T.blue},last.type),React.createElement("div",{"style":{ color:T.muted, fontSize:11, marginTop:6, fontFamily:mono }},last.duration,"min")) : React.createElement("div",{"style":{ color:T.muted, fontSize:13 }},"Aucune séance"))),habits.length > 0 && (
+        React.createElement(Card,{"style":{ marginBottom:10 },"pad":13},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }},React.createElement(Label,{"style":{ margin:0 }},"Habitudes"),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},habits.filter(h=>h.logs[todayStr]).length,"/",habits.length,"aujourd'hui")),React.createElement("div",{"style":{ display:"flex", flexDirection:"column", gap:7 }},habits.map(h => {
+              const done = !!h.logs[todayStr];
+              const streak = (() => {
+                let s=0, d=new Date(TODAY+"T12:00");
+                while(true){const k=d.toISOString().slice(0,10);if(!h.logs[k])break;s++;d.setDate(d.getDate()-1);}
+                return s;
+              })();
+              return (
+                React.createElement("div",{"key":h.id,"style":{ display:"flex", alignItems:"center", gap:10 },"onClick":() => toggleHabit(h.id)},React.createElement("div",{"style":{ width:28, height:28, borderRadius:8, flexShrink:0,
+                    background:done?h.color+"22":"transparent",
+                    border:`1.5px solid ${done?h.color:T.border}`,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    cursor:"pointer", transition:"all .12s" }},done && React.createElement("span",{"style":{ color:h.color, fontSize:13, fontWeight:700 }},"✓")),React.createElement("div",{"style":{ flex:1 }},React.createElement("div",{"style":{ fontSize:12, fontWeight:600,
+                      color:done?T.ink:T.muted }},h.icon,h.name)),streak > 0 && (
+                    React.createElement("div",{"style":{ fontSize:10, color:T.muted, fontFamily:mono, flexShrink:0 }},"🔥",streak,"j")
+                  ))
+              );
+            })))
+      ),React.createElement("div",{"style":{ background:`linear-gradient(135deg,${T.goldLt}22,${T.goldLt}08)`,
+        border:`1px solid ${T.gold}44`, borderRadius:14, padding:14 }},React.createElement("div",{"style":{ fontSize:10, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase",
+          color:T.goldDk, marginBottom:8 }},"Citation du jour"),React.createElement("div",{"style":{ fontFamily:serif, fontSize:14, fontStyle:"italic",
+          color:T.ink, lineHeight:1.6, marginBottom:6 }},"\"",quote.q,"\""),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},"—",quote.a)))
   );
 }
 
@@ -883,10 +1055,26 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
                       background:exType===k?T.goldLt+"33":"transparent",
                       color:exType===k?T.goldDk:T.muted,
                       fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:font }},v.icon,v.label)
-                ))),exType && EXERCISE_TYPES[exType] && (
+                ))),exType && EXERCISE_TYPES[exType] && exType !== "cardio" && (
                 React.createElement("div",{"style":{ background:T.goldLt+"18", border:`1px solid ${T.gold}22`,
                   borderRadius:7, padding:"6px 9px", fontSize:11, color:T.goldDk, marginBottom:10 }},"💡",EXERCISE_TYPES[exType].note)
-              ),React.createElement(SetsEditor,{"sets":sets,"setSets":setSets,"exType":exType,"isTemplate":isTemplate}))
+              ),exType === "cardio" ? (
+                React.createElement("div",null,React.createElement("div",{"style":{ background:T.red+"0D", border:`1px solid ${T.red}22`,
+                    borderRadius:7, padding:"6px 9px", fontSize:11, color:T.red, marginBottom:10 }},"❤️ Exercice cardio — remplis les métriques ci-dessous"),(() => {
+                    const ex = EXERCISE_BANK_SEED.find(e => e.name === exName);
+                    const metrics = ex?.cardio_metrics || ["duree","distance"];
+                    return (
+                      React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, minWidth:0 }},metrics.map(mk => {
+                          const m = CARDIO_METRICS_LABELS[mk] || {label:mk,unit:"",type:"number"};
+                          return (
+                            React.createElement(Inp,{"key":mk,"label":`${m.label}${m.unit?" ("+m.unit+")":""}`,"value":sets[0]?.[mk]||"","onChange":v => setSets([{...sets[0],[mk]:v}]),"type":m.type,"placeholder":"—"})
+                          );
+                        }))
+                    );
+                  })())
+              ) : (
+                React.createElement(SetsEditor,{"sets":sets,"setSets":setSets,"exType":exType,"isTemplate":isTemplate})
+              ))
           ) : (
             React.createElement(React.Fragment,null,React.createElement("div",{"style":{ background:T.blue+"0A", border:`1px solid ${T.blue}22`,
                 borderRadius:10, padding:10, marginBottom:8 }},React.createElement("div",{"style":{ fontSize:11, fontWeight:700, color:T.blue, marginBottom:7 }},"Exercice A"),React.createElement("div",{"style":{ display:"flex", gap:6, marginBottom:7 }},React.createElement("input",{"value":ssA.name,"onChange":e=>setSsA(a=>({...a,name:e.target.value})),"placeholder":"Exercice A…","style":{ ...rawInp, flex:1, minWidth:0, fontWeight:600, fontSize:12 }}),React.createElement("button",{"onClick":() => { setPickerFor("A"); setShowPicker(true); },"style":{ background:T.blue, border:"none", borderRadius:7, padding:"6px 9px",
@@ -3460,7 +3648,7 @@ function PersistentApp(){
   React.useEffect(()=>{ Object.assign(T, THEMES[theme]||THEMES.light); },[theme]);
   const calorieTarget=calculateCalorieTarget(profile);
   const views={
-    home:React.createElement(Home,{data,setTab,profile,calorieTarget}),
+    home:React.createElement(Home,{data,setData,setTab,profile,calorieTarget}),
     workout:React.createElement(WorkoutView,{data,setData}),
     calories:React.createElement(CalView,{data,setData,profile,calorieTarget}),
     habits:React.createElement(HabitsView,{data,setData}),
