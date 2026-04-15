@@ -498,7 +498,6 @@ function Home({ data, setTab, setData, profile, calorieTarget }) {
   const stepsData    = data.steps || {};
   const stepsToday   = stepsData[todayStr] || 0;
   const stepsGoal    = data.goals?.steps || 10000;
-  const [stepsInput, setStepsInput] = useState("");
   const addSteps = (n) => setData(d => ({
     ...d, steps: { ...(d.steps||{}), [todayStr]: n }
   }));
@@ -534,10 +533,8 @@ function Home({ data, setTab, setData, profile, calorieTarget }) {
                 alignItems:"center", justifyContent:"center" }},React.createElement("span",{"style":{ fontSize:10, fontWeight:700, fontFamily:mono }},Math.min(Math.round(pct(waterToday,waterGoal)*100),999),"%"))),React.createElement("div",null,React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:17, color:T.text }},waterToday>=1000?`${(waterToday/1000).toFixed(1)}L`:`${waterToday}ml`),React.createElement("div",{"style":{ fontSize:10, color:T.muted }},"/",waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`))),React.createElement(Bar,{"val":waterToday,"total":waterGoal,"color":waterToday>=waterGoal?T.green:T.blue,"h":4}))),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }},React.createElement(Card,{"onClick":() => setTab("profil"),"pad":13,"style":{ marginBottom:0 }},React.createElement(Label,null,"Poids"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4, marginBottom:4 }},React.createElement("span",{"style":{ fontSize:22, fontWeight:700, fontFamily:mono }},latest?.weight || "—"),React.createElement("span",{"style":{ color:T.muted, fontSize:12 }},"kg")),wDelta!==null && (
             React.createElement("div",{"style":{ fontSize:12, color:+wDelta<0?T.green:T.red }},+wDelta<0?"▼":"▲",Math.abs(wDelta),"kg")
           ),React.createElement("div",{"style":{ marginTop:6 }},React.createElement(Spark,{"values":data.body.slice().reverse().map(b=>b.weight),"color":T.mutedLt,"h":22}))),React.createElement(Card,{"onClick":() => setTab("workout"),"pad":13,"style":{ marginBottom:0 }},React.createElement(Label,null,"Dernière séance"),last ? React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:5, marginBottom:5 }},React.createElement("span",{"style":{ fontSize:16 }},cfg?.icon),React.createElement("span",{"style":{ fontWeight:700, color:T.text, fontSize:13,
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }},last.name)),React.createElement(Pill,{"color":cfg?.color||T.blue},last.type),React.createElement("div",{"style":{ color:T.muted, fontSize:11, marginTop:6, fontFamily:mono }},last.duration,"min")) : React.createElement("div",{"style":{ color:T.muted, fontSize:13 }},"Aucune séance"))),React.createElement(Card,{"style":{ marginBottom:10 },"pad":13},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }},React.createElement(Label,{"style":{ margin:0 }},"🚶 Pas"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:16, fontWeight:700,
-              color:stepsToday>=stepsGoal?T.green:stepsToday>=stepsGoal*0.6?T.orange:T.text }},stepsToday.toLocaleString("fr")),React.createElement("span",{"style":{ fontSize:11, color:T.muted }},"/",stepsGoal.toLocaleString("fr")))),React.createElement(Bar,{"val":stepsToday,"total":stepsGoal,"color":stepsToday>=stepsGoal?T.green:stepsToday>=stepsGoal*0.6?T.orange:T.blue,"h":4}),React.createElement("div",{"style":{ display:"flex", gap:6, marginTop:10 }},React.createElement("input",{"type":"number","value":stepsInput,"onChange":e => setStepsInput(e.target.value),"placeholder":"Nombre de pas…","style":{ flex:1, background:T.bg, border:`1px solid ${T.border}`, borderRadius:8,
-              padding:"7px 10px", fontSize:12, color:T.text, fontFamily:font, outline:"none" }}),React.createElement("button",{"onClick":() => { if(+stepsInput>0){addSteps(+stepsInput);setStepsInput("");} },"style":{ background:T.blue, border:"none", borderRadius:8, padding:"7px 12px",
-              color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},"✓"))),habits.length > 0 && (
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }},last.name)),React.createElement(Pill,{"color":cfg?.color||T.blue},last.type),React.createElement("div",{"style":{ color:T.muted, fontSize:11, marginTop:6, fontFamily:mono }},last.duration,"min")) : React.createElement("div",{"style":{ color:T.muted, fontSize:13 }},"Aucune séance"))),React.createElement(Card,{"style":{ marginBottom:10 },"pad":13,"onClick":() => setTab("habits")},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }},React.createElement(Label,{"style":{ margin:0 }},"🚶 Pas"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:16, fontWeight:700,
+              color:stepsToday>=stepsGoal?T.green:stepsToday>=stepsGoal*0.6?T.orange:T.text }},stepsToday > 0 ? stepsToday.toLocaleString("fr") : "—"),React.createElement("span",{"style":{ fontSize:11, color:T.muted }},"/",stepsGoal.toLocaleString("fr")))),React.createElement(Bar,{"val":stepsToday,"total":stepsGoal,"color":stepsToday>=stepsGoal?T.green:stepsToday>=stepsGoal*0.6?T.orange:T.blue,"h":4}),React.createElement("div",{"style":{ fontSize:11, color:T.mutedLt, marginTop:6, textAlign:"right" }},"Appuie pour saisir →")),habits.length > 0 && (
         React.createElement(Card,{"style":{ marginBottom:10 },"pad":13},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }},React.createElement(Label,{"style":{ margin:0 }},"Habitudes"),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},habits.filter(h=>h.logs[todayStr]).length,"/",habits.length,"aujourd'hui")),React.createElement("div",{"style":{ display:"flex", flexDirection:"column", gap:7 }},habits.map(h => {
               const done = !!h.logs[todayStr];
               const streak = (() => {
@@ -1295,7 +1292,10 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
   const vol = isMuscu
     ? (w.exercises||[]).reduce((a,ex) => {
         const items = ex.items || [{sets: ex.sets||[]}];
-        return a + items.reduce((b,it) => b + it.sets.reduce((c,s) => c+(s.w||0)*(s.r||0),0),0);
+        return a + items.reduce((b,it) => {
+          const mult = it.type === "halteres" ? 2 : 1;
+          return b + it.sets.reduce((c,s) => c+(s.w||0)*(s.r||0)*mult,0);
+        },0);
       }, 0)
     : null;
 
@@ -1594,7 +1594,10 @@ function WorkoutView({ data, setData }) {
                 const isMuscu = !c?.isCardio;
                 const vol = isMuscu ? (w.exercises||[]).reduce((a,ex)=>{
                   const items=ex.items||[{sets:ex.sets||[]}];
-                  return a+items.reduce((b,it)=>b+it.sets.reduce((c,s)=>c+(s.w||0)*(s.r||0),0),0);
+                  return a+items.reduce((b,it)=>{
+                    const mult=it.type==="halteres"?2:1;
+                    return b+it.sets.reduce((c,s)=>c+(s.w||0)*(s.r||0)*mult,0);
+                  },0);
                 },0) : null;
                 const dist = !isMuscu ? (w.blocks||[]).reduce((sum,b) => {
                   const d = parseFloat(b.distance)||0;
@@ -2653,7 +2656,7 @@ function BodyView({ data, setData, profile, calorieTarget }) {
                 ))),React.createElement("div",{"style":{ display:"flex", gap:10, flexWrap:"wrap" }},MEASURES.map(m => (
                 React.createElement("span",{"key":m.key,"style":{ fontSize:11, color:T.muted }},m.label.split(" ")[0].slice(0,3),":",React.createElement("span",{"style":{ color:m.color, fontWeight:600, fontFamily:mono }},b[m.key]))
               ))))
-        ))),React.createElement(StepsSection,{"data":data,"setData":setData}))
+        ))))
   );
 }
 
@@ -3211,7 +3214,10 @@ function getWorkoutElevation(wo) {
 function getMuscuVolume(wo) {
   return (wo.exercises||[]).reduce((a,ex) => {
     const items = ex.items || [{sets:ex.sets||[]}];
-    return a + items.reduce((b,it) => b + it.sets.reduce((c,s) => c+(s.w||0)*(s.r||0),0),0);
+    return a + items.reduce((b,it) => {
+      const mult = it.type === "halteres" ? 2 : 1;
+      return b + it.sets.reduce((c,s) => c+(s.w||0)*(s.r||0)*mult,0);
+    },0);
   },0);
 }
 
@@ -3446,7 +3452,8 @@ function PRCard({ title, prs, onSave, accent, placeholder, hint }) {
                       border:`1px solid ${accent}66`, borderRadius:9, overflow:"hidden" }},React.createElement("input",{"autoFocus":true,"type":"text","value":draft.value,"onChange":e=>setDraft(d=>({...d,value:e.target.value})),"placeholder":placeholder,"onKeyDown":e=>{ if(e.key==="Enter") confirm(pr); if(e.key==="Escape") cancel(); },"style":{ flex:1, background:"none", border:"none", outline:"none",
                           padding:"8px 10px", fontSize:16, fontFamily:mono, fontWeight:700, color:T.text }}),React.createElement("span",{"style":{ color:T.muted, fontSize:11, paddingRight:10 }},pr.unit))),React.createElement("div",null,React.createElement("div",{"style":{ fontSize:10, fontWeight:600, color:T.mutedLt, letterSpacing:.5, textTransform:"uppercase", marginBottom:3 }},"Date"),React.createElement("div",{"style":{ display:"flex", alignItems:"center", background:T.bg,
                       border:`1px solid ${T.border}`, borderRadius:9, overflow:"hidden" }},React.createElement("input",{"type":"date","value":draft.date,"onChange":e=>setDraft(d=>({...d,date:e.target.value})),"style":{ flex:1, background:"none", border:"none", outline:"none",
-                          padding:"8px 10px", fontSize:12, fontFamily:font, color:T.text }})))),React.createElement("div",{"style":{ display:"flex", gap:8 }},React.createElement("button",{"onClick":()=>confirm(pr),"style":{ background:accent, color:"#fff", border:"none", borderRadius:8,
+                          padding:"8px 6px", fontSize:11, fontFamily:font, color:T.text,
+                          minWidth:0, width:"100%" }})))),React.createElement("div",{"style":{ display:"flex", gap:8 }},React.createElement("button",{"onClick":()=>confirm(pr),"style":{ background:accent, color:"#fff", border:"none", borderRadius:8,
                       padding:"7px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},"✓ Valider"),React.createElement("button",{"onClick":cancel,"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:8,
                       padding:"7px 14px", fontSize:12, color:T.muted, cursor:"pointer", fontFamily:font }},"Annuler")))
             ) : (
@@ -3713,7 +3720,7 @@ function HabitsView({ data, setData }) {
                     border:`3px solid ${newH.color===col?"#000":"transparent"}`,
                     cursor:"pointer" }})
               )))),React.createElement(Btn,{"onClick":addHabit,"size":"sm"},"Ajouter"))
-      ),tab==="history" && React.createElement(HistoryTab,null))
+      ),tab==="history" && React.createElement(HistoryTab,null),tab==="today" && React.createElement(StepsSection,{"data":data,"setData":setData}))
   );
 }
 
