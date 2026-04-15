@@ -146,8 +146,8 @@ const ACTIVITY_TYPES = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const TODAY = new Date().toISOString().slice(0, 10);
-const today = () => TODAY;
+const today = () => new Date().toLocaleDateString("fr-CA"); // YYYY-MM-DD local time
+const TODAY = today(); // kept for compatibility but now matches local date
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const pct   = (v, t) => clamp(v / (t || 1), 0, 1);
 
@@ -254,7 +254,7 @@ function calculateCalorieTarget(profile) {
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const SEED = {
-  goals: { kcal: 2000, protein: 150, carbs: 200, fat: 65, weight: 0 },
+  goals: { kcal: 2000, protein: 150, carbs: 200, fat: 65, weight: 0, steps: 10000 },
   workouts: [],
   prs: [
     { id:"bench",    exercise:"Bench Press",      cat:"muscu", value:"", unit:"kg",  date:"" },
@@ -267,6 +267,7 @@ const SEED = {
   ],
   calories: [],
   body: [],
+  steps: {},  // { "YYYY-MM-DD": number }
 };
 
 // ─── UI Primitives ────────────────────────────────────────────────────────────
@@ -346,112 +347,120 @@ function Spark({ values, color = T.gold, h = 36 }) {
 // ─── HOME ─────────────────────────────────────────────────────────────────────
 // ─── CITATIONS ────────────────────────────────────────────────────────────────
 const QUOTES = [
-  { q:"La discipline est le pont entre les objectifs et les accomplissements.", a:"Jim Rohn" },
-  { q:"Le succès n'est pas final, l'échec n'est pas fatal : c'est le courage de continuer qui compte.", a:"Winston Churchill" },
-  { q:"Ton corps peut supporter presque n'importe quoi. C'est ton esprit que tu dois convaincre.", a:"Inconnu" },
-  { q:"La douleur que tu ressens aujourd'hui sera la force que tu ressentiras demain.", a:"Inconnu" },
-  { q:"Ne limite pas tes défis. Défie tes limites.", a:"Inconnu" },
-  { q:"Le seul mauvais entraînement est celui que tu n'as pas fait.", a:"Inconnu" },
-  { q:"Les champions ne sont pas faits dans les salles de sport. Ils sont faits de quelque chose qu'ils ont en eux.", a:"Muhammad Ali" },
-  { q:"Si ça ne te challenge pas, ça ne te changera pas.", a:"Fred DeVito" },
-  { q:"Soulève lourd, mange bien, dors suffisamment. Répète.", a:"Inconnu" },
-  { q:"Ce que tu manges en privé se voit en public.", a:"Inconnu" },
-  { q:"La motivation te fait démarrer. L'habitude te fait continuer.", a:"Jim Ryun" },
-  { q:"Chaque répétition t'amène plus près de ton objectif.", a:"Inconnu" },
-  { q:"Le corps accomplit ce que l'esprit croit.", a:"Napoleon Hill" },
-  { q:"Sois plus fort que tes excuses.", a:"Inconnu" },
-  { q:"Les résultats demandent des sacrifices. Es-tu prêt ?", a:"Inconnu" },
-  { q:"La progression, pas la perfection.", a:"Inconnu" },
-  { q:"Un an de travail acharné bat une vie de vœux pieux.", a:"Inconnu" },
-  { q:"Prends soin de ton corps. C'est le seul endroit où tu as à vivre.", a:"Jim Rohn" },
-  { q:"La santé est la vraie richesse, pas les pièces d'or et d'argent.", a:"Mahatma Gandhi" },
-  { q:"Faire de l'exercice est une célébration de ce que ton corps peut faire.", a:"Inconnu" },
-  { q:"L'entraînement c'est 10% physique et 90% mental.", a:"Inconnu" },
-  { q:"Chaque expert a été un débutant.", a:"Inconnu" },
-  { q:"Ce n'est pas la force qui gagne, c'est la persévérance.", a:"Inconnu" },
-  { q:"L'endurance n'est pas seulement la capacité de supporter une situation difficile, mais de la transformer.", a:"Inconnu" },
-  { q:"Le secret du succès c'est de commencer.", a:"Mark Twain" },
-  { q:"Petit à petit, l'oiseau fait son nid.", a:"Proverbe" },
-  { q:"Vous ne pouvez pas retourner en arrière et changer le début, mais vous pouvez commencer là où vous êtes.", a:"C.S. Lewis" },
-  { q:"L'action est le remède fondamental à tout stress.", a:"Inconnu" },
-  { q:"Le temps que tu consacres à ta santé, tu ne le consacres pas à la maladie.", a:"Inconnu" },
-  { q:"Les grands résultats nécessitent de grands ambitions.", a:"Heraclite" },
-  { q:"Si tu veux quelque chose que tu n'as jamais eu, fais quelque chose que tu n'as jamais fait.", a:"Inconnu" },
-  { q:"L'effort d'aujourd'hui est le résultat de demain.", a:"Inconnu" },
-  { q:"La fatigue est temporaire. Les regrets durent toujours.", a:"Inconnu" },
-  { q:"Pas de douleur, pas de gain. Pas d'effort, pas de changement.", a:"Inconnu" },
-  { q:"Ce qui ne te tue pas te rend plus fort.", a:"Friedrich Nietzsche" },
-  { q:"Le plus grand accomplissement est de se relever après chaque chute.", a:"Vince Lombardi" },
+  // ── David Goggins — Can't Hurt Me / Never Finished ──────────────────────────
+  { q:"Je ne m'arrête pas quand je suis fatigué. Je m'arrête quand j'ai fini.", a:"David Goggins" },
+  { q:"Arrêtez de trouver des excuses. Arrêtez d'être des victimes. Tenez-vous pour responsables.", a:"David Goggins" },
+  { q:"La plupart d'entre nous abandonnent alors que nous n'avons donné que 40% de notre effort maximum.", a:"David Goggins" },
+  { q:"Peu importe la façon dont ils te traitent, il y a un moyen de renverser la situation : l'excellence.", a:"David Goggins" },
+  { q:"Ce n'est pas ta faute si tu as eu une mauvaise pioche, mais c'est ta responsabilité.", a:"David Goggins" },
+  { q:"Nous vivons dans un monde confortable. Le confort est l'ennemi de la croissance.", a:"David Goggins" },
+  { q:"Quand ton esprit te dit d'arrêter, tu n'es qu'à 40% de tes capacités réelles.", a:"David Goggins" },
+  { q:"La souffrance est la voie vers la grandeur. Apprends à t'y sentir à l'aise.", a:"David Goggins" },
+
+  // ── James Clear — Atomic Habits ───────────────────────────────────────────────
+  { q:"Vous ne vous élevez pas au niveau de vos objectifs. Vous tombez au niveau de vos systèmes.", a:"James Clear" },
+  { q:"Le succès est le fruit d'habitudes quotidiennes, et non de transformations uniques.", a:"James Clear" },
+  { q:"Si vous pouvez vous améliorer de 1% chaque jour pendant un an, vous finirez 37 fois mieux.", a:"James Clear" },
+  { q:"Les habitudes ne consistent pas à obtenir quelque chose, mais à se convertir en quelqu'un.", a:"James Clear" },
+  { q:"La seule façon de devenir excellent est d'être fasciné sans cesse en faisant la même chose.", a:"James Clear" },
+  { q:"Vous devriez être bien plus préoccupé par votre trajectoire actuelle que par vos résultats actuels.", a:"James Clear" },
+  { q:"Chaque action que vous faites est un vote pour le type de personne que vous souhaitez devenir.", a:"James Clear" },
+  { q:"Les habitudes basées sur l'identité : l'accent est mis sur qui vous souhaitez devenir.", a:"James Clear" },
+
+  // ── Don Miguel Ruiz — Les 4 Accords Toltèques ────────────────────────────────
+  { q:"Que votre parole soit impeccable. Ne l'utilisez pas contre vous-même ni pour médire d'autrui.", a:"Don Miguel Ruiz" },
+  { q:"Quoi qu'il arrive, n'en faites pas une affaire personnelle.", a:"Don Miguel Ruiz" },
+  { q:"Ne faites pas de suppositions. Ayez le courage de poser des questions.", a:"Don Miguel Ruiz" },
+  { q:"Faites toujours de votre mieux. Votre mieux changera d'un moment à l'autre.", a:"Don Miguel Ruiz" },
+  { q:"Lorsque vous faites de votre mieux, vous apprenez à vous respecter.", a:"Don Miguel Ruiz" },
+
+  // ── Marc Aurèle — Pensées pour moi-même ──────────────────────────────────────
+  { q:"Que la force me soit donnée de supporter ce qui ne peut être changé, et le courage de changer ce qui peut l'être.", a:"Marc Aurèle" },
+  { q:"Fais que chaque acte compte, comme s'il était le dernier de ta vie.", a:"Marc Aurèle" },
+  { q:"Vous devez construire votre vie action par action, et personne ne peut vous en empêcher.", a:"Marc Aurèle" },
+  { q:"Tout ce qui est possible à l'homme ne peut être au-dessus de tes forces.", a:"Marc Aurèle" },
+  { q:"Ne te conduis pas comme si tu devais vivre des millions d'années.", a:"Marc Aurèle" },
+  { q:"L'émeraude ne perd pas de sa valeur faute de louanges.", a:"Marc Aurèle" },
+
+  // ── Épictète ──────────────────────────────────────────────────────────────────
+  { q:"Il y a des choses qui dépendent de nous et d'autres qui n'en dépendent pas.", a:"Épictète" },
+  { q:"Ce qui trouble les hommes, ce ne sont pas les choses, mais les opinions qu'ils en ont.", a:"Épictète" },
+  { q:"Ne demande point que les choses arrivent comme tu le désires, mais désire qu'elles arrivent comme elles arrivent.", a:"Épictète" },
+  { q:"Quel est l'homme invincible ? C'est celui que rien ne peut troubler, rien de ce qui est indépendant de sa personne.", a:"Épictète" },
+  { q:"N'attends pas que les événements arrivent comme tu le souhaites. Décide de vouloir ce qui arrive.", a:"Épictète" },
+
+  // ── Sénèque ───────────────────────────────────────────────────────────────────
+  { q:"Hâte-toi de bien vivre et songe que chaque jour est à lui seul une vie.", a:"Sénèque" },
+  { q:"Tirons notre courage de notre désespoir même.", a:"Sénèque" },
+  { q:"Que la santé de l'âme soit le principal objet de tes soins.", a:"Sénèque" },
+  { q:"Il n'est pas de vent favorable pour celui qui ne sait pas où il va.", a:"Sénèque" },
+  { q:"Personne ne se soucie de bien vivre, mais de vivre longtemps — alors que bien vivre dépend de nous.", a:"Sénèque" },
+
+  // ── Muhammad Ali ──────────────────────────────────────────────────────────────
   { q:"Ne comptez pas les jours, faites que les jours comptent.", a:"Muhammad Ali" },
+  { q:"Les champions ne sont pas faits dans les salles de sport. Ils sont faits de quelque chose qu'ils ont en eux.", a:"Muhammad Ali" },
+  { q:"Impossible est un mot que l'on trouve dans le dictionnaire des lâches.", a:"Muhammad Ali" },
+  { q:"Je me bats pour ma liberté, pour ma dignité, pour être un homme.", a:"Muhammad Ali" },
+
+  // ── Arnold Schwarzenegger ─────────────────────────────────────────────────────
+  { q:"La force ne vient pas de gagner. Tes luttes développent ta force.", a:"Arnold Schwarzenegger" },
+  { q:"Le dernier trois ou quatre répétitions font le muscle. C'est la douleur qui divise le champion du non-champion.", a:"Arnold Schwarzenegger" },
+  { q:"Pour moi, la vie c'est continuellement être sur la brèche, continuer à avancer.", a:"Arnold Schwarzenegger" },
+
+  // ── Jim Rohn ──────────────────────────────────────────────────────────────────
+  { q:"La discipline est le pont entre les objectifs et les accomplissements.", a:"Jim Rohn" },
+  { q:"Prends soin de ton corps. C'est le seul endroit où tu as à vivre.", a:"Jim Rohn" },
+  { q:"Ne souhaite pas que ce soit plus facile, souhaite être meilleur.", a:"Jim Rohn" },
+  { q:"Le succès n'est rien de plus que quelques disciplines simples, pratiquées chaque jour.", a:"Jim Rohn" },
+
+  // ── Kobe Bryant ───────────────────────────────────────────────────────────────
+  { q:"Le tout c'est d'avoir envie de mettre le travail en avant même quand ça ne se passe pas bien.", a:"Kobe Bryant" },
+  { q:"Si tu as peur de l'échec, tu n'iras nulle part.", a:"Kobe Bryant" },
+  { q:"La douleur est temporaire. La capitulation est pour toujours.", a:"Kobe Bryant" },
+
+  // ── Aristote ──────────────────────────────────────────────────────────────────
+  { q:"L'excellence est une habitude, non un acte.", a:"Aristote" },
+  { q:"Nous sommes ce que nous faisons de manière répétée.", a:"Aristote" },
+  { q:"La patience est amère, mais son fruit est doux.", a:"Aristote" },
+
+  // ── Gandhi ────────────────────────────────────────────────────────────────────
+  { q:"La santé est la vraie richesse, pas les pièces d'or et d'argent.", a:"Mahatma Gandhi" },
   { q:"La force ne vient pas des capacités physiques. Elle vient d'une volonté indomptable.", a:"Mahatma Gandhi" },
-  { q:"Un corps en bonne santé est une chambre pour l'âme, un corps malade est une prison.", a:"Francis Bacon" },
-  { q:"La santé, c'est la vie en silence.", a:"Francis Ponge" },
-  { q:"Mange pour vivre, ne vis pas pour manger.", a:"Socrate" },
+  { q:"Vis comme si tu allais mourir demain. Apprends comme si tu allais vivre toujours.", a:"Mahatma Gandhi" },
+
+  // ── Hippocrate ────────────────────────────────────────────────────────────────
   { q:"Que ton aliment soit ton seul médicament.", a:"Hippocrate" },
   { q:"Un esprit sain dans un corps sain.", a:"Juvénal" },
-  { q:"Votre niveau de succès dépend rarement de vos capacités et davantage de votre désir de réussir.", a:"Dan Waldschmidt" },
-  { q:"La cohérence est ce qui transforme la moyenne en excellence.", a:"Inconnu" },
-  { q:"La discipline pèse des grammes, le regret pèse des tonnes.", a:"Inconnu" },
-  { q:"Les petites actions quotidiennes créent de grands résultats à long terme.", a:"Inconnu" },
+  { q:"Marcher est le meilleur remède pour l'homme.", a:"Hippocrate" },
+
+  // ── Nietzsche ─────────────────────────────────────────────────────────────────
+  { q:"Ce qui ne me tue pas me rend plus fort.", a:"Friedrich Nietzsche" },
+  { q:"Sans musique, la vie serait une erreur.", a:"Friedrich Nietzsche" },
+
+  // ── Autres personnalités confirmées ──────────────────────────────────────────
   { q:"Commence là où tu es. Utilise ce que tu as. Fais ce que tu peux.", a:"Arthur Ashe" },
-  { q:"L'excellence est une habitude, non un acte.", a:"Aristote" },
-  { q:"Il faut toujours viser la lune, car même en cas d'échec on atterrit dans les étoiles.", a:"Oscar Wilde" },
-  { q:"Crois en toi et tout devient possible.", a:"Inconnu" },
-  { q:"Le moment présent est le seul moment disponible pour vivre.", a:"Thich Nhat Hanh" },
-  { q:"Vis comme si tu allais mourir demain. Apprends comme si tu allais vivre toujours.", a:"Gandhi" },
-  { q:"La force ne vient pas de gagner. Tes luttes développent ta force.", a:"Arnold Schwarzenegger" },
-  { q:"Chaque accomplissement commence par la décision d'essayer.", a:"John F. Kennedy" },
-  { q:"Faire les choses difficiles quand c'est difficile — c'est la définition de la discipline.", a:"Inconnu" },
-  { q:"Tu es plus courageux que tu ne le crois, plus fort que tu ne le sembles.", a:"A.A. Milne" },
-  { q:"Le succès appartient à ceux qui se lèvent tôt.", a:"Proverbe" },
-  { q:"Chaque jour est une nouvelle chance d'améliorer ta vie.", a:"Inconnu" },
-  { q:"Si tu veux changer ton corps, commence par changer tes habitudes.", a:"Inconnu" },
-  { q:"L'investissement dans ton bien-être est le plus rentable de tous.", a:"Inconnu" },
-  { q:"Ton futur te remerciera pour les efforts d'aujourd'hui.", a:"Inconnu" },
-  { q:"La régularité bat le talent quand le talent n'est pas régulier.", a:"Inconnu" },
-  { q:"Le corps atteint ce que l'esprit croit être possible.", a:"Inconnu" },
-  { q:"Sois patient avec toi-même. Rien dans la nature ne fleurit toute l'année.", a:"Inconnu" },
-  { q:"Les habitudes sont des chaînes trop légères pour être senties jusqu'à ce qu'elles soient trop lourdes pour être brisées.", a:"Warren Buffett" },
-  { q:"La vie est trop courte pour ne pas être en bonne santé.", a:"Inconnu" },
-  { q:"Ce que tu fais aujourd'hui peut améliorer tous tes lendemains.", a:"Ralph Marston" },
-  { q:"Le meilleur projet sur lequel tu puisses travailler, c'est toi-même.", a:"Inconnu" },
-  { q:"L'effort est la chose la plus précieuse que tu puisses offrir.", a:"Inconnu" },
-  { q:"Chaque journée est une occasion de devenir meilleur qu'hier.", a:"Inconnu" },
-  { q:"Il n'y a pas de raccourci vers un endroit qui en vaut la peine.", a:"Beverly Sills" },
+  { q:"Le plus grand accomplissement est de se relever après chaque chute.", a:"Vince Lombardi" },
   { q:"Le travail dur bat le talent quand le talent ne travaille pas dur.", a:"Tim Notke" },
-  { q:"Ce n'est pas ce que tu es capable de faire, c'est ce que tu es prêt à faire.", a:"Inconnu" },
-  { q:"La force n'est pas l'absence de faiblesse, c'est le courage de les surmonter.", a:"Inconnu" },
-  { q:"L'entraînement d'aujourd'hui est le fondement de demain.", a:"Inconnu" },
-  { q:"Chaque kilo soulevé est une victoire sur hier.", a:"Inconnu" },
-  { q:"Mange pour performer, pas seulement pour te remplir.", a:"Inconnu" },
-  { q:"Le repos fait partie de l'entraînement.", a:"Inconnu" },
-  { q:"Hydrate-toi. Dors bien. Bouge souvent. C'est la formule.", a:"Inconnu" },
-  { q:"Le succès n'est pas une destination, c'est un voyage quotidien.", a:"Inconnu" },
-  { q:"Fais aujourd'hui ce que les autres ne feront pas, pour avoir demain ce que les autres n'auront pas.", a:"Jerry Rice" },
-  { q:"La ténacité : travaille dur pendant que les autres se reposent.", a:"Inconnu" },
-  { q:"Deviens la version de toi-même que tu admires.", a:"Inconnu" },
-  { q:"Le premier pas est toujours le plus difficile.", a:"Inconnu" },
-  { q:"Rends-toi fier.", a:"Inconnu" },
-  { q:"Repousse tes limites, non pour les casser, mais pour les redéfinir.", a:"Inconnu" },
-  { q:"La transformation commence le jour où tu décides que tu en as assez.", a:"Inconnu" },
-  { q:"Dors comme un champion. Mange comme un champion. Entraîne-toi comme un champion.", a:"Inconnu" },
+  { q:"La motivation te fait démarrer. L'habitude te fait continuer.", a:"Jim Ryun" },
+  { q:"Il n'y a pas de raccourci vers un endroit qui en vaut la peine.", a:"Beverly Sills" },
+  { q:"Il faut toujours viser la lune, car même en cas d'échec on atterrit dans les étoiles.", a:"Oscar Wilde" },
+  { q:"Le secret du succès c'est de commencer.", a:"Mark Twain" },
+  { q:"Chaque accomplissement commence par la décision d'essayer.", a:"John F. Kennedy" },
+  { q:"Mange pour vivre, ne vis pas pour manger.", a:"Socrate" },
+  { q:"L'important n'est pas ce qu'on a fait de nous, mais ce qu'on fait de ce qu'on a fait de nous.", a:"Jean-Paul Sartre" },
   { q:"Le changement est difficile au début, désordonné au milieu et magnifique à la fin.", a:"Robin Sharma" },
   { q:"Ce que tu mesures, tu peux l'améliorer.", a:"Peter Drucker" },
-  { q:"Les habitudes gagnantes commencent par des choix gagnants.", a:"Inconnu" },
-  { q:"Une heure d'exercice par jour, c'est 4% de ta journée pour une vie meilleure.", a:"Inconnu" },
-  { q:"La persévérance est l'effort continu malgré la difficulté.", a:"Inconnu" },
-  { q:"Crois au processus.", a:"Inconnu" },
-  { q:"Peu importe la lenteur, tu avances toujours plus vite que quelqu'un qui n'essaie pas.", a:"Inconnu" },
-  { q:"Les grandes choses ne viennent jamais de zones de confort.", a:"Neil Strauss" },
-  { q:"Chaque séance compte. Chaque repas compte. Chaque choix compte.", a:"Inconnu" },
-  { q:"La transformation physique commence dans la tête.", a:"Inconnu" },
-  { q:"Fais de ta santé une priorité, pas une option.", a:"Inconnu" },
-  { q:"Les résultats sont proportionnels aux efforts fournis.", a:"Inconnu" },
-  { q:"Le corps suit l'esprit. Forme d'abord ton esprit.", a:"Inconnu" },
-  { q:"Chaque entraînement manqué est une occasion ratée de progresser.", a:"Inconnu" },
   { q:"La volonté peut tout.", a:"Virgile" },
-  { q:"L'alimentation est la première médecine.", a:"Inconnu" },
-  { q:"Investis en toi-même. Ton corps est ton capital.", a:"Inconnu" },
+
+  // ── Proverbes ─────────────────────────────────────────────────────────────────
+  { q:"Mens sana in corpore sano — un esprit sain dans un corps sain.", a:"Proverbe latin" },
+  { q:"Tomber sept fois, se relever huit.", a:"Proverbe japonais" },
+  { q:"Vouloir c'est pouvoir.", a:"Proverbe français" },
+  { q:"Petit à petit, l'oiseau fait son nid.", a:"Proverbe français" },
+  { q:"Là où il y a une volonté, il y a un chemin.", a:"Proverbe anglais" },
+  { q:"Aucun vent n'est favorable pour celui qui ne sait pas où il va.", a:"Proverbe" },
+  { q:"Chaque voyage de mille lieues commence par un premier pas.", a:"Proverbe chinois" },
+  { q:"La santé est une couronne que portent les gens en bonne santé, mais que seuls les malades peuvent voir.", a:"Proverbe arabe" },
 ];
 
 // Get today's quote based on day of year
@@ -485,7 +494,14 @@ function Home({ data, setTab, setData, profile, calorieTarget }) {
   const waterBonus = (data.workouts||[]).find(w=>w.date===todayStr) ? 500 : 0;
   const waterGoal  = Math.round((profile?.weight||70) * 35 + waterBonus);
 
-  // Toggle habit from home
+  // Steps
+  const stepsData    = data.steps || {};
+  const stepsToday   = stepsData[todayStr] || 0;
+  const stepsGoal    = data.goals?.steps || 10000;
+  const [stepsInput, setStepsInput] = useState("");
+  const addSteps = (n) => setData(d => ({
+    ...d, steps: { ...(d.steps||{}), [todayStr]: n }
+  }));
   const toggleHabit = (habitId) => {
     setData(d => ({
       ...d,
@@ -518,7 +534,10 @@ function Home({ data, setTab, setData, profile, calorieTarget }) {
                 alignItems:"center", justifyContent:"center" }},React.createElement("span",{"style":{ fontSize:10, fontWeight:700, fontFamily:mono }},Math.min(Math.round(pct(waterToday,waterGoal)*100),999),"%"))),React.createElement("div",null,React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:17, color:T.text }},waterToday>=1000?`${(waterToday/1000).toFixed(1)}L`:`${waterToday}ml`),React.createElement("div",{"style":{ fontSize:10, color:T.muted }},"/",waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`))),React.createElement(Bar,{"val":waterToday,"total":waterGoal,"color":waterToday>=waterGoal?T.green:T.blue,"h":4}))),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }},React.createElement(Card,{"onClick":() => setTab("profil"),"pad":13,"style":{ marginBottom:0 }},React.createElement(Label,null,"Poids"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4, marginBottom:4 }},React.createElement("span",{"style":{ fontSize:22, fontWeight:700, fontFamily:mono }},latest?.weight || "—"),React.createElement("span",{"style":{ color:T.muted, fontSize:12 }},"kg")),wDelta!==null && (
             React.createElement("div",{"style":{ fontSize:12, color:+wDelta<0?T.green:T.red }},+wDelta<0?"▼":"▲",Math.abs(wDelta),"kg")
           ),React.createElement("div",{"style":{ marginTop:6 }},React.createElement(Spark,{"values":data.body.slice().reverse().map(b=>b.weight),"color":T.mutedLt,"h":22}))),React.createElement(Card,{"onClick":() => setTab("workout"),"pad":13,"style":{ marginBottom:0 }},React.createElement(Label,null,"Dernière séance"),last ? React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:5, marginBottom:5 }},React.createElement("span",{"style":{ fontSize:16 }},cfg?.icon),React.createElement("span",{"style":{ fontWeight:700, color:T.text, fontSize:13,
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }},last.name)),React.createElement(Pill,{"color":cfg?.color||T.blue},last.type),React.createElement("div",{"style":{ color:T.muted, fontSize:11, marginTop:6, fontFamily:mono }},last.duration,"min")) : React.createElement("div",{"style":{ color:T.muted, fontSize:13 }},"Aucune séance"))),habits.length > 0 && (
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }},last.name)),React.createElement(Pill,{"color":cfg?.color||T.blue},last.type),React.createElement("div",{"style":{ color:T.muted, fontSize:11, marginTop:6, fontFamily:mono }},last.duration,"min")) : React.createElement("div",{"style":{ color:T.muted, fontSize:13 }},"Aucune séance"))),React.createElement(Card,{"style":{ marginBottom:10 },"pad":13},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }},React.createElement(Label,{"style":{ margin:0 }},"🚶 Pas"),React.createElement("div",{"style":{ display:"flex", alignItems:"baseline", gap:4 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:16, fontWeight:700,
+              color:stepsToday>=stepsGoal?T.green:stepsToday>=stepsGoal*0.6?T.orange:T.text }},stepsToday.toLocaleString("fr")),React.createElement("span",{"style":{ fontSize:11, color:T.muted }},"/",stepsGoal.toLocaleString("fr")))),React.createElement(Bar,{"val":stepsToday,"total":stepsGoal,"color":stepsToday>=stepsGoal?T.green:stepsToday>=stepsGoal*0.6?T.orange:T.blue,"h":4}),React.createElement("div",{"style":{ display:"flex", gap:6, marginTop:10 }},React.createElement("input",{"type":"number","value":stepsInput,"onChange":e => setStepsInput(e.target.value),"placeholder":"Nombre de pas…","style":{ flex:1, background:T.bg, border:`1px solid ${T.border}`, borderRadius:8,
+              padding:"7px 10px", fontSize:12, color:T.text, fontFamily:font, outline:"none" }}),React.createElement("button",{"onClick":() => { if(+stepsInput>0){addSteps(+stepsInput);setStepsInput("");} },"style":{ background:T.blue, border:"none", borderRadius:8, padding:"7px 12px",
+              color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},"✓"))),habits.length > 0 && (
         React.createElement(Card,{"style":{ marginBottom:10 },"pad":13},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }},React.createElement(Label,{"style":{ margin:0 }},"Habitudes"),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},habits.filter(h=>h.logs[todayStr]).length,"/",habits.length,"aujourd'hui")),React.createElement("div",{"style":{ display:"flex", flexDirection:"column", gap:7 }},habits.map(h => {
               const done = !!h.logs[todayStr];
               const streak = (() => {
@@ -956,6 +975,18 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
   const commit = () => {
     if (mode === "single") {
       if (!exName) return;
+      // Cardio exercise — save metrics directly instead of sets
+      if (exType === "cardio") {
+        const metrics = sets[0] || {};
+        const hasData = Object.values(metrics).some(v => v && v !== "");
+        if (!isTemplate && !hasData) return;
+        setExercises(es => [...es, {
+          kind:"single",
+          items:[{ name:exName, type:"cardio", sets:[metrics] }]
+        }]);
+        resetForm();
+        return;
+      }
       const parsed = parseSets(sets, exType);
       if (!isTemplate && parsed.length === 0) return;
       setExercises(es => [...es, {
@@ -3636,13 +3667,19 @@ function migrateData(saved){
   if(saved.data?.nutrition && !saved.data.nutrition.water){
     saved.data.nutrition.water = {};
   }
+  if(!saved.data?.steps) {
+    if(saved.data) saved.data.steps = {};
+  }
+  if(!saved.data?.goals?.steps) {
+    if(saved.data?.goals) saved.data.goals.steps = 10000;
+  }
   return saved;
 }
 function PersistentApp(){
   const saved=migrateData(loadState());
   const [tab,setTab]=useState("home");
   const [theme,setTheme]=useState(saved?.theme||"light");
-  const [data,setData]=useState(saved?.data||{...SEED,nutrition:{...NUTRITION_SEED,foodBank:FOOD_BANK_SEED},habits:HABITS_SEED,templates:[],sleep:[]});
+  const [data,setData]=useState(saved?.data||{...SEED,nutrition:{...NUTRITION_SEED,foodBank:FOOD_BANK_SEED},habits:HABITS_SEED,templates:[],sleep:[],steps:{}});
   const [profile,setProfile]=useState(saved?.profile||USER_PROFILE_SEED);
   React.useEffect(()=>{saveState({data,profile,theme});},[data,profile,theme]);
   React.useEffect(()=>{ Object.assign(T, THEMES[theme]||THEMES.light); },[theme]);
