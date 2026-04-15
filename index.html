@@ -1066,6 +1066,16 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
                               padding:"0 6px", fontSize:9, color:T.muted, fontWeight:700 }},"ENCHAÎNÉ"))
                         ))
                     ))
+                  ) : ex.items?.[0]?.type === "cardio" ? (
+                    // Cardio exercise — show metrics grid
+                    React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }},Object.entries(ex.items?.[0]?.sets?.[0]||{}).filter(([k,v])=>v).map(([k,v]) => {
+                        const m = CARDIO_METRICS_LABELS[k] || { label:k, unit:"" };
+                        return (
+                          React.createElement("div",{"key":k,"style":{ background:T.bg, borderRadius:8, padding:"7px 10px",
+                            border:`1px solid ${T.border}` }},React.createElement("div",{"style":{ fontSize:9, color:T.mutedLt, letterSpacing:.5,
+                              textTransform:"uppercase", marginBottom:2 }},m.label),React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:14, color:T.text }},v,React.createElement("span",{"style":{ fontSize:10, color:T.muted, fontWeight:400 }},m.unit)))
+                        );
+                      }))
                   ) : (
                     React.createElement(SetsEditor,{"sets":ex.items?.[0]?.sets||[],"setSets":ns => updateItemSets(0, ns),"exType":ex.items?.[0]?.type||"barre","isTemplate":isTemplate})
                   )))
@@ -1327,13 +1337,36 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
       ),isMuscu && (w.exercises||[]).map((ex,ei) => {
         const isSS = ex.kind === "superset";
         const allSets = ex.items?.flatMap(it=>it.sets) || ex.sets || [];
-        const exVol = (ex.items||[{name:ex.name,sets:ex.sets||[]}]).reduce((a,it)=>a+it.sets.reduce((b,s)=>b+(s.w||0)*(s.r||0),0),0);
+        const exVol = (ex.items||[{name:ex.name,sets:ex.sets||[]}]).reduce((a,it) => {
+          const mult = it.type === "halteres" ? 2 : 1;
+          return a + it.sets.reduce((b,s) => b+(s.w||0)*(s.r||0)*mult, 0);
+        }, 0);
         return (
           React.createElement(Card,{"key":ei,"style":{ marginBottom:10 }},isSS && React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }},React.createElement("span",{"style":{ background:T.purple+"18", color:T.purple, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }},"SUPERSET"),React.createElement("span",{"style":{ color:T.muted, fontSize:11 }},ex.items.map(it=>it.name).join(" + "))),(ex.items||[{name:ex.name,sets:ex.sets||[]}]).map((it,ii) => (
-              React.createElement("div",{"key":ii,"style":{ marginBottom:ii<(ex.items||[]).length-1?12:0 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }},React.createElement("div",{"style":{ fontWeight:700, color:T.text, fontSize:isSS?13:14 }},isSS ? React.createElement(React.Fragment,null,React.createElement("span",{"style":{color:T.purple, fontFamily:mono}},String.fromCharCode(65+ii)),"·") : null,it.name),React.createElement("button",{"onClick":() => setProgEx(it.name),"style":{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:7,
-                      padding:"3px 8px", fontSize:12, cursor:"pointer", color:T.muted, fontFamily:font }},"📈")),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, marginBottom:4 }},["#","Poids","Reps","Vol.","Repos"].map(h=>React.createElement("span",{"key":h,"style":{fontSize:10,fontWeight:600,color:T.mutedLt,letterSpacing:.5}},h))),it.sets.map((s,j) => (
-                  React.createElement("div",{"key":j,"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, padding:"6px 0", borderTop:`1px solid ${T.border}` }},React.createElement("span",{"style":{color:T.mutedLt,fontSize:13}},j+1),React.createElement("span",{"style":{fontSize:13}},s.w>0?`${s.w} kg`:"PDC"),React.createElement("span",{"style":{fontSize:13}},s.r),React.createElement("span",{"style":{fontSize:13,fontWeight:600,color:T.green,fontFamily:mono}},(s.w||0)*(s.r||0)||"—"),React.createElement("span",{"style":{fontSize:13,color:T.muted}},s.rest?`${s.rest}s`:"—"))
-                )))
+              React.createElement("div",{"key":ii,"style":{ marginBottom:ii<(ex.items||[]).length-1?12:0 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }},React.createElement("div",{"style":{ fontWeight:700, color:T.text, fontSize:isSS?13:14 }},isSS ? React.createElement(React.Fragment,null,React.createElement("span",{"style":{color:T.purple, fontFamily:mono}},String.fromCharCode(65+ii)),"·") : null,it.name,it.type === "cardio" && (
+                      React.createElement("span",{"style":{ marginLeft:6, background:T.red+"18", color:T.red,
+                        borderRadius:5, padding:"1px 7px", fontSize:10, fontWeight:700 }},"❤️ Cardio")
+                    )),it.type !== "cardio" && (
+                    React.createElement("button",{"onClick":() => setProgEx(it.name),"style":{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:7,
+                        padding:"3px 8px", fontSize:12, cursor:"pointer", color:T.muted, fontFamily:font }},"📈")
+                  )),it.type === "cardio" ? (
+                  // Cardio — affiche les métriques en grille
+                  React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }},Object.entries(it.sets?.[0]||{}).filter(([k,v])=>v).map(([k,v]) => {
+                      const m = CARDIO_METRICS_LABELS[k] || { label:k, unit:"" };
+                      return (
+                        React.createElement("div",{"key":k,"style":{ background:T.bg, borderRadius:8, padding:"7px 10px",
+                          border:`1px solid ${T.border}` }},React.createElement("div",{"style":{ fontSize:9, color:T.mutedLt, letterSpacing:.5,
+                            textTransform:"uppercase", marginBottom:2 }},m.label),React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:14, color:T.text }},v,React.createElement("span",{"style":{ fontSize:10, color:T.muted, fontWeight:400 }},m.unit)))
+                      );
+                    }))
+                ) : (
+                  // Muscu — affiche les séries classiques
+                  React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, marginBottom:4 }},["#","Poids","Reps","Vol.","Repos"].map(h=>React.createElement("span",{"key":h,"style":{fontSize:10,fontWeight:600,color:T.mutedLt,letterSpacing:.5}},h))),it.sets.map((s,j) => (
+                      React.createElement("div",{"key":j,"style":{ display:"grid", gridTemplateColumns:"28px 1fr 1fr 1fr 1fr", gap:6, padding:"6px 0", borderTop:`1px solid ${T.border}` }},React.createElement("span",{"style":{color:T.mutedLt,fontSize:13}},j+1),React.createElement("span",{"style":{fontSize:13}},s.w>0?`${s.w} kg`:"PDC"),React.createElement("span",{"style":{fontSize:13}},s.r),React.createElement("span",{"style":{fontSize:13,fontWeight:600,color:T.green,fontFamily:mono}},it.type==="halteres"
+                            ? ((s.w||0)*(s.r||0)*2||"—")
+                            : ((s.w||0)*(s.r||0)||"—")),React.createElement("span",{"style":{fontSize:13,color:T.muted}},s.rest?`${s.rest}s`:"—"))
+                    )))
+                ))
             )),React.createElement("div",{"style":{ textAlign:"right", color:T.muted, fontSize:11, marginTop:8 }},"Vol:",React.createElement("span",{"style":{fontWeight:700,color:T.green,fontFamily:mono}},exVol,"kg")))
         );
       }),!isMuscu && (w.blocks||[]).map((b,i) => {
@@ -3744,12 +3777,8 @@ function migrateData(saved){
   if(saved.data?.nutrition && !saved.data.nutrition.water){
     saved.data.nutrition.water = {};
   }
-  if(!saved.data?.steps) {
-    if(saved.data) saved.data.steps = {};
-  }
-  if(!saved.data?.goals?.steps) {
-    if(saved.data?.goals) saved.data.goals.steps = 10000;
-  }
+  if(!saved.data?.steps) { if(saved.data) saved.data.steps = {}; }
+  if(!saved.data?.goals?.steps) { if(saved.data?.goals) saved.data.goals.steps = 10000; }
   return saved;
 }
 function PersistentApp(){
