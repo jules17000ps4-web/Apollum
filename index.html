@@ -1275,9 +1275,9 @@ function ExerciseProgressView({ exName, allWorkouts, onClose }) {
 }
 
 // ─── WORKOUT DETAIL ───────────────────────────────────────────────────────────
-function WorkoutDetail({ workout: w, onBack, onDelete, allWorkouts }) {
+function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [progEx,       setProgEx]        = useState(null); // exercise name to show progression
+  const [progEx,       setProgEx]        = useState(null);
   const cfg   = ACTIVITY_TYPES[w.type];
   const isMuscu = !cfg?.isCardio;
   const fields  = BLOCK_FIELDS[w.type] || [];
@@ -1300,14 +1300,17 @@ function WorkoutDetail({ workout: w, onBack, onDelete, allWorkouts }) {
   const repeatBlocks = (w.blocks||[]).filter(b => b.kind==="repeat").length;
 
   return (
-    React.createElement("div",null,React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center" }},React.createElement(BackBtn,{"onClick":onBack}),onDelete && !confirmDelete && (
-          React.createElement("button",{"onClick":() => setConfirmDelete(true),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:8,
-              padding:"5px 12px", fontSize:12, color:T.muted, cursor:"pointer", fontFamily:font }},"🗑 Supprimer")
-        ),confirmDelete && (
-          React.createElement("div",{"style":{ display:"flex", gap:8, alignItems:"center" }},React.createElement("span",{"style":{ fontSize:12, color:T.red }},"Confirmer ?"),React.createElement("button",{"onClick":onDelete,"style":{ background:T.red, border:"none", borderRadius:8, padding:"5px 12px",
-                fontSize:12, color:"#fff", cursor:"pointer", fontFamily:font, fontWeight:600 }},"Oui, supprimer"),React.createElement("button",{"onClick":() => setConfirmDelete(false),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:8,
-                padding:"5px 12px", fontSize:12, color:T.muted, cursor:"pointer", fontFamily:font }},"Annuler"))
-        )),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }},React.createElement("div",null,React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }},React.createElement("span",{"style":{ fontSize:22 }},cfg?.icon),React.createElement("h2",{"style":{ fontSize:22, fontWeight:700, color:T.text }},w.name)),React.createElement("div",{"style":{ display:"flex", gap:8, alignItems:"center" }},React.createElement(Pill,{"color":cfg?.color},w.type),React.createElement("span",{"style":{ color:T.muted, fontSize:12 }},w.date))),React.createElement("div",{"style":{ textAlign:"right" }},React.createElement("span",{"style":{ fontFamily:mono, fontWeight:700, fontSize:22 }},w.duration),React.createElement("div",{"style":{ color:T.muted, fontSize:11 }},"min"))),isMuscu && (
+    React.createElement("div",null,React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center" }},React.createElement(BackBtn,{"onClick":onBack}),React.createElement("div",{"style":{ display:"flex", gap:8 }},onEdit && (
+            React.createElement("button",{"onClick":onEdit,"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:8,
+                padding:"5px 12px", fontSize:12, color:T.muted, cursor:"pointer", fontFamily:font }},"✏️ Modifier")
+          ),onDelete && !confirmDelete && (
+            React.createElement("button",{"onClick":() => setConfirmDelete(true),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:8,
+                padding:"5px 12px", fontSize:12, color:T.muted, cursor:"pointer", fontFamily:font }},"🗑 Supprimer")
+          ),confirmDelete && (
+            React.createElement("div",{"style":{ display:"flex", gap:8, alignItems:"center" }},React.createElement("span",{"style":{ fontSize:12, color:T.red }},"Confirmer ?"),React.createElement("button",{"onClick":onDelete,"style":{ background:T.red, border:"none", borderRadius:8, padding:"5px 12px",
+                  fontSize:12, color:"#fff", cursor:"pointer", fontFamily:font, fontWeight:600 }},"Oui, supprimer"),React.createElement("button",{"onClick":() => setConfirmDelete(false),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:8,
+                  padding:"5px 12px", fontSize:12, color:T.muted, cursor:"pointer", fontFamily:font }},"Annuler"))
+          ))),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }},React.createElement("div",null,React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }},React.createElement("span",{"style":{ fontSize:22 }},cfg?.icon),React.createElement("h2",{"style":{ fontSize:22, fontWeight:700, color:T.text }},w.name)),React.createElement("div",{"style":{ display:"flex", gap:8, alignItems:"center" }},React.createElement(Pill,{"color":cfg?.color},w.type),React.createElement("span",{"style":{ color:T.muted, fontSize:12 }},w.date))),React.createElement("div",{"style":{ textAlign:"right" }},React.createElement("span",{"style":{ fontFamily:mono, fontWeight:700, fontSize:22 }},w.duration),React.createElement("div",{"style":{ color:T.muted, fontSize:11 }},"min"))),isMuscu && (
         React.createElement(Card,{"style":{ marginBottom:14, display:"flex", gap:0 },"pad":14},[["Vol. total",vol+" kg"],["Blocs",(w.exercises||[]).length],["Séries",(w.exercises||[]).reduce((a,ex)=>{const items=ex.items||[{sets:ex.sets||[]}];return a+items.reduce((b,it)=>b+it.sets.length,0);},0)]].map(([l,v],i) => (
             React.createElement("div",{"key":i,"style":{ flex:1, textAlign:"center", borderLeft:i>0?`1px solid ${T.border}`:"none" }},React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:16 }},v),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},l))
           )))
@@ -1414,6 +1417,7 @@ function WorkoutView({ data, setData }) {
   const [form,      setForm]      = useState({ name:"", type:"Musculation", duration:"" });
   const [exercises, setExercises] = useState([]);
   const [blocks,    setBlocks]    = useState([]);
+  const [editingId, setEditingId] = useState(null); // null = new, id = editing existing
 
   const cfg = ACTIVITY_TYPES[form.type];
 
@@ -1421,19 +1425,28 @@ function WorkoutView({ data, setData }) {
     setForm({ name:"", type:"Musculation", duration:"" });
     setExercises([]); setBlocks([]);
     setSavingAsTemplate(false);
+    setEditingId(null);
   };
 
   const templates = data.templates || [];
-
   const mutTemplates = (fn) => setData(d => ({ ...d, templates: fn(d.templates || []) }));
 
-  // Save a regular workout
+  // Save a regular workout (new or edit)
   const saveWorkout = () => {
     if (!form.name) return;
-    const wo = { id:Date.now(), date:today(), type:form.type, name:form.name, duration:+form.duration };
-    if (cfg.isCardio) { wo.blocks = blocks; }
-    else { wo.exercises = exercises; }
-    setData(d => ({ ...d, workouts:[wo,...d.workouts] }));
+    if (editingId) {
+      // Update existing
+      const updated = { ...data.workouts.find(x=>x.id===editingId),
+        name:form.name, type:form.type, duration:+form.duration };
+      if (cfg.isCardio) { updated.blocks = blocks; updated.exercises = undefined; }
+      else { updated.exercises = exercises; updated.blocks = undefined; }
+      setData(d => ({ ...d, workouts: d.workouts.map(x => x.id===editingId ? updated : x) }));
+    } else {
+      const wo = { id:Date.now(), date:today(), type:form.type, name:form.name, duration:+form.duration };
+      if (cfg.isCardio) { wo.blocks = blocks; }
+      else { wo.exercises = exercises; }
+      setData(d => ({ ...d, workouts:[wo,...d.workouts] }));
+    }
     setScreen("list"); resetAdd();
   };
 
@@ -1471,13 +1484,26 @@ function WorkoutView({ data, setData }) {
       setData(d => ({ ...d, workouts: d.workouts.filter(x => x.id !== selId) }));
       setScreen("list");
     };
-    return React.createElement(WorkoutDetail,{"workout":w,"onBack":() => setScreen("list"),"onDelete":deleteWorkout,"allWorkouts":data.workouts});
+    const editWorkout = () => {
+      // Pre-fill the add form with existing workout data
+      setForm({ name:w.name, type:w.type, duration:w.duration||"" });
+      if (ACTIVITY_TYPES[w.type]?.isCardio) {
+        setBlocks((w.blocks||[]).map(b=>({...b})));
+      } else {
+        setExercises((w.exercises||[]).map(ex=>({...ex,
+          items:(ex.items||[]).map(it=>({...it,sets:(it.sets||[]).map(s=>({...s}))}))
+        })));
+      }
+      setEditingId(selId);
+      setScreen("add");
+    };
+    return React.createElement(WorkoutDetail,{"workout":w,"onBack":() => setScreen("list"),"onDelete":deleteWorkout,"onEdit":editWorkout,"allWorkouts":data.workouts});
   }
 
   if (screen === "add") {
     const fromTpl = selTplId ? templates.find(t => t.id === selTplId) : null;
     return (
-      React.createElement("div",null,React.createElement(BackBtn,{"onClick":() => { setScreen("list"); resetAdd(); setSelTplId(null); }}),React.createElement("h2",{"style":{ fontSize:20, fontWeight:700, color:T.text, marginBottom:4 }},fromTpl ? `Séance · ${fromTpl.name}` : savingAsTemplate ? "Nouveau modèle" : "Nouvelle séance"),fromTpl && (
+      React.createElement("div",null,React.createElement(BackBtn,{"onClick":() => { setScreen("list"); resetAdd(); setSelTplId(null); }}),React.createElement("h2",{"style":{ fontSize:20, fontWeight:700, color:T.text, marginBottom:4 }},fromTpl ? `Séance · ${fromTpl.name}` : editingId ? "Modifier la séance" : savingAsTemplate ? "Nouveau modèle" : "Nouvelle séance"),fromTpl && (
           React.createElement("div",{"style":{ fontSize:12, color:T.gold, marginBottom:16, display:"flex", alignItems:"center", gap:5 }},React.createElement("span",null,"📋"),"Depuis le modèle — remplis les charges et reps")
         ),!fromTpl && (
           React.createElement("div",{"style":{ display:"flex", background:T.border, borderRadius:10, padding:3, gap:3, marginBottom:16 }},[[false,"Séance"],[true,"Modèle 📋"]].map(([isTpl,lbl]) => (
@@ -2365,6 +2391,57 @@ const MEASURES = [
   { key:"thighs", label:"Cuisses",     color:T.red },
 ];
 
+// ─── STEPS SECTION ────────────────────────────────────────────────────────────
+function StepsSection({ data, setData }) {
+  const stepsData = data.steps || {};
+  const stepsGoal = data.goals?.steps || 10000;
+  const [inputs,  setInputs]  = useState({});
+  const [editing, setEditing] = useState(null);
+
+  // Last 3 days including today
+  const days = Array.from({length:3}, (_,i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    return d.toLocaleDateString("fr-CA");
+  });
+
+  const dayLabel = (dateStr) => {
+    const d = new Date(dateStr + "T12:00");
+    const t = today();
+    if (dateStr === t) return "Aujourd'hui";
+    const y = new Date(t + "T12:00");
+    y.setDate(y.getDate() - 1);
+    if (dateStr === y.toLocaleDateString("fr-CA")) return "Hier";
+    return d.toLocaleDateString("fr", { weekday:"long", day:"numeric" });
+  };
+
+  const save = (date) => {
+    const val = +inputs[date];
+    if (!val) return;
+    setData(d => ({ ...d, steps: { ...(d.steps||{}), [date]: val } }));
+    setInputs(i => ({...i, [date]:""}));
+    setEditing(null);
+  };
+
+  return (
+    React.createElement(Card,{"style":{ marginTop:14 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }},React.createElement(Label,{"style":{ margin:0 }},"🚶 Pas"),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},"Objectif :",stepsGoal.toLocaleString("fr"),"pas")),days.map(date => {
+        const steps = stepsData[date] || 0;
+        const pct   = Math.min(steps / stepsGoal, 1);
+        const isEdit = editing === date;
+        return (
+          React.createElement("div",{"key":date,"style":{ marginBottom:12 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }},React.createElement("span",{"style":{ fontSize:12, fontWeight:600, color:T.ink }},dayLabel(date)),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:14, fontWeight:700,
+                  color:steps>=stepsGoal?T.green:steps>=stepsGoal*0.6?T.orange:T.text }},steps > 0 ? steps.toLocaleString("fr") : "—"),React.createElement("button",{"onClick":() => setEditing(isEdit ? null : date),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:6,
+                    padding:"2px 8px", fontSize:11, color:T.muted, cursor:"pointer", fontFamily:font }},"✏️"))),React.createElement(Bar,{"val":steps,"total":stepsGoal,"color":steps>=stepsGoal?T.green:steps>=stepsGoal*0.6?T.orange:T.blue,"h":4}),isEdit && (
+              React.createElement("div",{"style":{ display:"flex", gap:6, marginTop:8 }},React.createElement("input",{"type":"number","value":inputs[date]||"","onChange":e => setInputs(i=>({...i,[date]:e.target.value})),"placeholder":steps > 0 ? steps.toString() : "Nombre de pas…","style":{ flex:1, background:T.bg, border:`1px solid ${T.border}`,
+                    borderRadius:8, padding:"7px 10px", fontSize:12, color:T.text,
+                    fontFamily:font, outline:"none" }}),React.createElement("button",{"onClick":() => save(date),"style":{ background:T.blue, border:"none", borderRadius:8, padding:"7px 14px",
+                    color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},"✓"))
+            ))
+        );
+      }))
+  );
+}
+
 function BodyView({ data, setData, profile, calorieTarget }) {
   const [screen,       setScreen]      = useState("overview");
   const [focus,        setFocus]       = useState("weight");
@@ -2543,7 +2620,7 @@ function BodyView({ data, setData, profile, calorieTarget }) {
                 ))),React.createElement("div",{"style":{ display:"flex", gap:10, flexWrap:"wrap" }},MEASURES.map(m => (
                 React.createElement("span",{"key":m.key,"style":{ fontSize:11, color:T.muted }},m.label.split(" ")[0].slice(0,3),":",React.createElement("span",{"style":{ color:m.color, fontWeight:600, fontFamily:mono }},b[m.key]))
               ))))
-        ))))
+        ))),React.createElement(StepsSection,{"data":data,"setData":setData}))
   );
 }
 
