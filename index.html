@@ -95,7 +95,7 @@ const ACTIVITY_TYPES = {
   },
   Running: {
     color: T.orange, icon: "🏃",
-    isCardio: true, tracked: true, // contributes km
+    isCardio: true, tracked: true,
     fields: [
       { key:"time",     label:"Durée",         unit:"min",    type:"number", placeholder:"45" },
       { key:"distance", label:"Distance",       unit:"km",     type:"number", placeholder:"10.5" },
@@ -133,15 +133,10 @@ const ACTIVITY_TYPES = {
       { key:"bpm",      label:"BPM moy.",          unit:"bpm",    type:"number", placeholder:"140" },
     ],
   },
-  Hybride: {
+  Fonctionnel: {
     color: T.red, icon: "⚡",
-    isCardio: true,
-    fields: [
-      { key:"time",     label:"Durée",             unit:"min",    type:"number", placeholder:"50" },
-      { key:"distance", label:"Distance course",   unit:"km",     type:"number", placeholder:"4" },
-      { key:"rounds",   label:"Rounds",            unit:"",       type:"number", placeholder:"5" },
-      { key:"bpm",      label:"BPM moy.",          unit:"bpm",    type:"number", placeholder:"168" },
-    ],
+    isCardio: false,
+    isFonctionnel: true,
   },
 };
 
@@ -463,12 +458,20 @@ const QUOTES = [
   { q:"La santé est une couronne que portent les gens en bonne santé, mais que seuls les malades peuvent voir.", a:"Proverbe arabe" },
 ];
 
-// Get today's quote based on day of year
+// Get today's quote — shuffled by date so order is random but stable per day
 const getDailyQuote = () => {
-  const start = new Date(new Date().getFullYear(), 0, 0);
-  const diff = new Date() - start;
-  const dayOfYear = Math.floor(diff / 86400000);
-  return QUOTES[dayOfYear % QUOTES.length];
+  const d = new Date();
+  const seed = d.getFullYear() * 1000 + d.getMonth() * 31 + d.getDate();
+  // Seeded shuffle — Fisher-Yates with date as seed
+  const arr = [...QUOTES];
+  let s = seed;
+  for (let i = arr.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  return arr[dayOfYear % arr.length];
 };
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
@@ -1179,7 +1182,7 @@ function BlockEditor({ block, onChange, onRemove, actType, idx }) {
               React.createElement("button",{"key":k,"onClick":() => onChange({...block,kind:k}),"style":{ padding:"4px 10px", borderRadius:6, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:font,
                   background:block.kind===k?T.surface:"transparent", color:block.kind===k?T.text:T.muted, transition:"all .12s" }},lbl)
             )))),React.createElement("button",{"onClick":onRemove,"style":{ background:"none", border:"none", color:T.mutedLt, cursor:"pointer", fontSize:16, padding:0, lineHeight:1 }},"×")),React.createElement("div",{"style":{ marginBottom:8 }},React.createElement("input",{"value":block.label,"onChange":e => onChange({...block,label:e.target.value}),"placeholder":isRepeat?"Ex: 400m allure seuil":"Ex: Échauffement","style":{ ...rawInp, width:"100%", fontWeight:600 }})),isRepeat && (
-        React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8, marginBottom:8, background:color+"0d", borderRadius:8, padding:"8px 12px" }},React.createElement("span",{"style":{ fontSize:12, color, fontWeight:600 }},"×"),React.createElement("input",{"type":"number","value":block.reps,"onChange":e => onChange({...block,reps:e.target.value}),"placeholder":"5","style":{ ...rawInp, width:48, textAlign:"center", fontFamily:mono, fontWeight:700, fontSize:16, color }}),React.createElement("span",{"style":{ fontSize:12, color:T.muted }},"répétitions"),block.rest !== undefined && React.createElement(React.Fragment,null,React.createElement("span",{"style":{ fontSize:12, color:T.muted, marginLeft:"auto" }},"repos"),React.createElement("input",{"type":"number","value":block.rest,"onChange":e => onChange({...block,rest:e.target.value}),"placeholder":"90","style":{ ...rawInp, width:52, textAlign:"center", fontFamily:mono }}),React.createElement("span",{"style":{ fontSize:12, color:T.muted }},"s")))
+        React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:6, marginBottom:8, background:color+"0d", borderRadius:8, padding:"8px 10px", flexWrap:"wrap" }},React.createElement("span",{"style":{ fontSize:12, color, fontWeight:600 }},"×"),React.createElement("input",{"type":"number","value":block.reps,"onChange":e => onChange({...block,reps:e.target.value}),"placeholder":"5","style":{ ...rawInp, width:44, textAlign:"center", fontFamily:mono, fontWeight:700, fontSize:16, color }}),React.createElement("span",{"style":{ fontSize:12, color:T.muted }},"rép."),block.rest !== undefined && React.createElement(React.Fragment,null,React.createElement("span",{"style":{ fontSize:12, color:T.muted, marginLeft:"auto" }},"repos"),React.createElement("input",{"type":"number","value":block.rest,"onChange":e => onChange({...block,rest:e.target.value}),"placeholder":"90","style":{ ...rawInp, width:48, textAlign:"center", fontFamily:mono }}),React.createElement("span",{"style":{ fontSize:12, color:T.muted }},"s")))
       ),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }},fields.map(f => (
           React.createElement("div",{"key":f.key},React.createElement("div",{"style":{ fontSize:10, fontWeight:600, color:T.mutedLt, letterSpacing:.5, textTransform:"uppercase", marginBottom:3 }},f.label),React.createElement("div",{"style":{ display:"flex", alignItems:"center", background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, overflow:"hidden" }},React.createElement("input",{"type":f.type,"value":block[f.key]||"","onChange":e => onChange({...block,[f.key]:e.target.value}),"placeholder":f.ph,"style":{ flex:1, background:"none", border:"none", outline:"none", padding:"7px 10px", fontSize:13, color:T.text, fontFamily:font }}),React.createElement("span",{"style":{ color:T.mutedLt, fontSize:11, paddingRight:8, flexShrink:0 }},f.unit)))
         ))))
@@ -1206,7 +1209,104 @@ function CardioBlockForm({ actType, blocks, setBlocks }) {
   return (
     React.createElement("div",null,blocks.map((b,i) => (
         React.createElement("div",{"key":i,"style":{ display:"flex", gap:6, alignItems:"flex-start", marginBottom:10 }},React.createElement("div",{"style":{ display:"flex", flexDirection:"column", gap:3, paddingTop:16, flexShrink:0 }},React.createElement("button",{"onClick":() => i>0 && moveBlock(i,i-1),"style":{ background:"none", border:"none", color:i>0?T.muted:T.border, cursor:i>0?"pointer":"default", fontSize:14, padding:0, lineHeight:1 }},"↑"),React.createElement("button",{"onClick":() => i<blocks.length-1 && moveBlock(i,i+1),"style":{ background:"none", border:"none", color:i<blocks.length-1?T.muted:T.border, cursor:i<blocks.length-1?"pointer":"default", fontSize:14, padding:0, lineHeight:1 }},"↓")),React.createElement("div",{"style":{ flex:1 }},React.createElement(BlockEditor,{"idx":i,"block":b,"actType":actType,"onChange":nb => updateBlock(i,nb),"onRemove":() => removeBlock(i)})))
-      )),React.createElement("div",{"style":{ display:"flex", gap:8 }},React.createElement(Btn,{"onClick":() => addBlock("single"),"variant":"outline","size":"sm"},"+ Bloc"),React.createElement(Btn,{"onClick":() => addBlock("repeat"),"variant":"outline","size":"sm"},"+ Répétitions")))
+      )),React.createElement("div",{"style":{ display:"flex", gap:8, flexWrap:"wrap" }},React.createElement(Btn,{"onClick":() => addBlock("single"),"variant":"outline","size":"sm"},"+ Bloc"),React.createElement(Btn,{"onClick":() => addBlock("repeat"),"variant":"outline","size":"sm"},"+ Répétitions")))
+  );
+}
+
+// ─── FONCTIONNEL CONFIG ───────────────────────────────────────────────────────
+const FONC_SUBTYPES = [
+  { id:"WOD",      label:"WOD",       icon:"💥", color:"#9B3A2E" },
+  { id:"HYROX",    label:"HYROX",     icon:"🏟️", color:"#B87333" },
+  { id:"AMRAP",    label:"AMRAP",     icon:"🔃", color:"#6B4E8A" },
+  { id:"EMOM",     label:"EMOM",      icon:"⏱",  color:"#3D5A8A" },
+  { id:"ForTime",  label:"For Time",  icon:"🏁", color:"#2E6B6B" },
+  { id:"Circuit",  label:"Circuit",   icon:"🔁", color:"#4A7C59" },
+  { id:"Libre",    label:"Libre",     icon:"✏️", color:"#8C7E5E" },
+];
+
+const FONC_BLOC_TYPES = [
+  { id:"running",   label:"Running",      icon:"🏃", metrics:[
+    {key:"distance",label:"Distance",unit:"km",  type:"number",ph:"1"},
+    {key:"time",    label:"Temps",   unit:"min", type:"text",  ph:"5:00"},
+    {key:"pace",    label:"Allure",  unit:"/km", type:"text",  ph:"5:00"},
+    {key:"bpm",     label:"BPM",     unit:"bpm", type:"number",ph:"160"},
+  ]},
+  { id:"station",   label:"Station",      icon:"🎯", metrics:[
+    {key:"label2",  label:"Exercice",unit:"",    type:"text",  ph:"Ski Erg, Sled Push…"},
+    {key:"distance",label:"Distance",unit:"m",   type:"number",ph:"50"},
+    {key:"reps",    label:"Reps",    unit:"",    type:"number",ph:"20"},
+    {key:"weight",  label:"Poids",   unit:"kg",  type:"number",ph:"20"},
+    {key:"time",    label:"Temps",   unit:"min", type:"text",  ph:"2:30"},
+  ]},
+  { id:"amrap",     label:"AMRAP",        icon:"🔃", metrics:[
+    {key:"duration",label:"Durée",   unit:"min", type:"number",ph:"20"},
+    {key:"rounds",  label:"Rounds",  unit:"",    type:"number",ph:"7"},
+    {key:"repsplus",label:"Reps +",  unit:"",    type:"number",ph:"12"},
+    {key:"level",   label:"Niveau",  unit:"",    type:"text",  ph:"RX / Scaled"},
+  ]},
+  { id:"fortime",   label:"For Time",     icon:"🏁", metrics:[
+    {key:"time",    label:"Temps",   unit:"min", type:"text",  ph:"12:34"},
+    {key:"rounds",  label:"Rounds",  unit:"",    type:"number",ph:"5"},
+    {key:"level",   label:"Niveau",  unit:"",    type:"text",  ph:"RX / Scaled"},
+  ]},
+  { id:"emom",      label:"EMOM",         icon:"⏱",  metrics:[
+    {key:"duration",label:"Durée",   unit:"min", type:"number",ph:"20"},
+    {key:"reps",    label:"Reps/min",unit:"",    type:"number",ph:"15"},
+  ]},
+  { id:"exercice",  label:"Exercice",     icon:"💪", metrics:[
+    {key:"reps",    label:"Reps",    unit:"",    type:"number",ph:"20"},
+    {key:"weight",  label:"Poids",   unit:"kg",  type:"number",ph:"60"},
+    {key:"sets",    label:"Séries",  unit:"",    type:"number",ph:"3"},
+    {key:"height",  label:"Hauteur", unit:"cm",  type:"number",ph:"60"},
+  ]},
+  { id:"libre",     label:"Libre",        icon:"✏️", metrics:[
+    {key:"note",    label:"Note",    unit:"",    type:"text",  ph:"Décris ce bloc librement…"},
+    {key:"time",    label:"Temps",   unit:"min", type:"text",  ph:"10:00"},
+  ]},
+];
+
+const emptyFoncBloc = () => ({ id:Date.now(), type:"running", label:"", data:{} });
+
+function FoncBlocEditor({ bloc, onChange, onRemove, idx }) {
+  const bt = FONC_BLOC_TYPES.find(t=>t.id===bloc.type) || FONC_BLOC_TYPES[0];
+  const color = FONC_SUBTYPES.find(s=>s.id===bloc.subtype)?.color || T.red;
+
+  return (
+    React.createElement("div",{"style":{ border:`1px solid ${T.border}`, borderRadius:12, padding:12,
+      marginBottom:10, background:T.bg }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }},React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8 }},React.createElement("div",{"style":{ width:24, height:24, borderRadius:6, background:T.red+"22", color:T.red,
+            fontWeight:700, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" }},idx+1),React.createElement("div",{"style":{ display:"flex", gap:4, overflowX:"auto", scrollbarWidth:"none" }},FONC_BLOC_TYPES.map(bt2 => (
+              React.createElement("button",{"key":bt2.id,"onClick":() => onChange({...bloc, type:bt2.id, data:{}}),"style":{ padding:"3px 8px", borderRadius:6, border:`1px solid ${bloc.type===bt2.id?T.red:T.border}`,
+                  background:bloc.type===bt2.id?T.red+"18":"transparent",
+                  color:bloc.type===bt2.id?T.red:T.muted,
+                  fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:font, whiteSpace:"nowrap" }},bt2.icon,bt2.label)
+            )))),React.createElement("button",{"onClick":onRemove,"style":{ background:"none", border:"none", color:T.mutedLt, cursor:"pointer", fontSize:16, padding:0 }},"×")),React.createElement("input",{"value":bloc.label,"onChange":e=>onChange({...bloc,label:e.target.value}),"placeholder":`Ex: ${bt.id==="running"?"1km Pace":"Station 1 — Ski Erg"}`,"style":{ ...rawInp, width:"100%", fontWeight:600, marginBottom:8 }}),React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }},bt.metrics.map(m => (
+          React.createElement("div",{"key":m.key,"style":{ minWidth:0 }},React.createElement("div",{"style":{ fontSize:9, color:T.mutedLt, letterSpacing:.5, textTransform:"uppercase", marginBottom:3 }},m.label),React.createElement("div",{"style":{ display:"flex", alignItems:"center", background:T.surface,
+              border:`1px solid ${T.border}`, borderRadius:8, overflow:"hidden" }},React.createElement("input",{"type":m.type,"value":bloc.data[m.key]||"","onChange":e=>onChange({...bloc, data:{...bloc.data,[m.key]:e.target.value}}),"placeholder":m.ph,"style":{ flex:1, background:"none", border:"none", outline:"none",
+                  padding:"7px 8px", fontSize:12, color:T.text, fontFamily:font, minWidth:0 }}),m.unit && React.createElement("span",{"style":{ color:T.mutedLt, fontSize:10, paddingRight:6, flexShrink:0 }},m.unit)))
+        ))))
+  );
+}
+
+function FonctionnelForm({ blocs, setBlocs, subtype, setSubtype }) {
+  const addBloc = () => setBlocs(bs => [...bs, emptyFoncBloc()]);
+  const updateBloc = (i, b) => setBlocs(bs => bs.map((x,j) => j===i?b:x));
+  const removeBloc = (i) => setBlocs(bs => bs.filter((_,j) => j!==i));
+  const moveBloc = (from, to) => setBlocs(bs => {
+    const arr=[...bs]; const [item]=arr.splice(from,1); arr.splice(to,0,item); return arr;
+  });
+
+  return (
+    React.createElement("div",null,React.createElement("div",{"style":{ marginBottom:14 }},React.createElement(Label,null,"Format"),React.createElement("div",{"style":{ display:"flex", gap:6, flexWrap:"wrap" }},FONC_SUBTYPES.map(st => (
+            React.createElement("button",{"key":st.id,"onClick":()=>setSubtype(st.id),"style":{ padding:"5px 10px", borderRadius:8,
+                border:`1px solid ${subtype===st.id?st.color:T.border}`,
+                background:subtype===st.id?st.color+"18":"transparent",
+                color:subtype===st.id?st.color:T.muted,
+                fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},st.icon,st.label)
+          )))),blocs.map((bloc, i) => (
+        React.createElement("div",{"key":bloc.id||i,"style":{ display:"flex", gap:6, alignItems:"flex-start" }},React.createElement("div",{"style":{ display:"flex", flexDirection:"column", gap:3, paddingTop:14, flexShrink:0 }},React.createElement("button",{"onClick":()=>i>0&&moveBloc(i,i-1),"style":{ background:"none", border:"none", color:i>0?T.muted:T.border, cursor:i>0?"pointer":"default", fontSize:13, padding:0 }},"↑"),React.createElement("button",{"onClick":()=>i<blocs.length-1&&moveBloc(i,i+1),"style":{ background:"none", border:"none", color:i<blocs.length-1?T.muted:T.border, cursor:i<blocs.length-1?"pointer":"default", fontSize:13, padding:0 }},"↓")),React.createElement("div",{"style":{ flex:1, minWidth:0 }},React.createElement(FoncBlocEditor,{"bloc":bloc,"idx":i,"onChange":nb=>updateBloc(i,nb),"onRemove":()=>removeBloc(i)})))
+      )),React.createElement("button",{"onClick":addBloc,"style":{ width:"100%", padding:"10px", border:`1px dashed ${T.border}`, borderRadius:10,
+          background:"transparent", color:T.muted, fontSize:12, fontWeight:600,
+          cursor:"pointer", fontFamily:font }},"+ Ajouter un bloc"))
   );
 }
 
@@ -1286,7 +1386,8 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [progEx,       setProgEx]        = useState(null);
   const cfg   = ACTIVITY_TYPES[w.type];
-  const isMuscu = !cfg?.isCardio;
+  const isFonc  = !!cfg?.isFonctionnel;
+  const isMuscu = !cfg?.isCardio && !isFonc;
   const fields  = BLOCK_FIELDS[w.type] || [];
 
   const vol = isMuscu
@@ -1369,7 +1470,28 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
                 ))
             )),React.createElement("div",{"style":{ textAlign:"right", color:T.muted, fontSize:11, marginTop:8 }},"Vol:",React.createElement("span",{"style":{fontWeight:700,color:T.green,fontFamily:mono}},exVol,"kg")))
         );
-      }),!isMuscu && (w.blocks||[]).map((b,i) => {
+      }),isFonc && (
+        React.createElement("div",null,w.foncSubtype && (
+            React.createElement("div",{"style":{ marginBottom:12 }},(() => {
+                const st = FONC_SUBTYPES.find(s=>s.id===w.foncSubtype);
+                return st ? (
+                  React.createElement("span",{"style":{ background:st.color+"22", color:st.color,
+                    border:`1px solid ${st.color}44`, borderRadius:8,
+                    padding:"4px 12px", fontSize:12, fontWeight:700 }},st.icon,st.label)
+                ) : null;
+              })())
+          ),(w.foncBlocs||[]).map((bloc, i) => {
+            const bt = FONC_BLOC_TYPES.find(t=>t.id===bloc.type) || FONC_BLOC_TYPES[0];
+            const hasData = Object.values(bloc.data||{}).some(v=>v);
+            return (
+              React.createElement("div",{"key":i,"style":{ display:"flex", gap:10, marginBottom:10 }},React.createElement("div",{"style":{ display:"flex", flexDirection:"column", alignItems:"center", paddingTop:14, flexShrink:0 }},React.createElement("div",{"style":{ width:10, height:10, borderRadius:99, background:T.red, border:`2px solid ${T.red}`, flexShrink:0 }}),i < (w.foncBlocs||[]).length-1 && React.createElement("div",{"style":{ width:1, flex:1, background:T.border, marginTop:4 }})),React.createElement(Card,{"style":{ flex:1, marginBottom:0 },"pad":12},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:hasData?8:0 }},React.createElement("div",null,React.createElement("span",{"style":{ fontSize:11, fontWeight:700, color:T.red }},bt.icon,bt.label),bloc.label && React.createElement("div",{"style":{ fontSize:13, fontWeight:700, color:T.ink, marginTop:2 }},bloc.label))),hasData && (
+                    React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }},bt.metrics.filter(m=>bloc.data?.[m.key]).map(m => (
+                        React.createElement("div",{"key":m.key,"style":{ background:T.bg, borderRadius:7, padding:"6px 8px", border:`1px solid ${T.border}` }},React.createElement("div",{"style":{ fontSize:9, color:T.mutedLt, letterSpacing:.5, textTransform:"uppercase", marginBottom:1 }},m.label),React.createElement("div",{"style":{ fontFamily:mono, fontWeight:700, fontSize:13, color:T.text }},bloc.data[m.key],React.createElement("span",{"style":{ fontSize:10, color:T.muted }},m.unit?" "+m.unit:"")))
+                      )))
+                  )))
+            );
+          }))
+      ),!isMuscu && (w.blocks||[]).map((b,i) => {
         const isRepeat = b.kind === "repeat";
         const color    = cfg?.color || T.orange;
         const reps     = isRepeat ? (parseInt(b.reps)||1) : 1;
@@ -1450,13 +1572,15 @@ function WorkoutView({ data, setData }) {
   const [form,      setForm]      = useState({ name:"", type:"Musculation", duration:"" });
   const [exercises, setExercises] = useState([]);
   const [blocks,    setBlocks]    = useState([]);
+  const [foncBlocs, setFoncBlocs] = useState([]);
+  const [foncSubtype, setFoncSubtype] = useState("WOD");
   const [editingId, setEditingId] = useState(null); // null = new, id = editing existing
 
   const cfg = ACTIVITY_TYPES[form.type];
 
   const resetAdd = () => {
     setForm({ name:"", type:"Musculation", duration:"" });
-    setExercises([]); setBlocks([]);
+    setExercises([]); setBlocks([]); setFoncBlocs([]); setFoncSubtype("WOD");
     setSavingAsTemplate(false);
     setEditingId(null);
   };
@@ -1467,17 +1591,19 @@ function WorkoutView({ data, setData }) {
   // Save a regular workout (new or edit)
   const saveWorkout = () => {
     if (!form.name) return;
+    const isFonc = cfg?.isFonctionnel;
     if (editingId) {
-      // Update existing
       const updated = { ...data.workouts.find(x=>x.id===editingId),
         name:form.name, type:form.type, duration:+form.duration };
-      if (cfg.isCardio) { updated.blocks = blocks; updated.exercises = undefined; }
-      else { updated.exercises = exercises; updated.blocks = undefined; }
+      if (isFonc) { updated.foncBlocs=foncBlocs; updated.foncSubtype=foncSubtype; updated.exercises=undefined; updated.blocks=undefined; }
+      else if (cfg.isCardio) { updated.blocks=blocks; updated.exercises=undefined; }
+      else { updated.exercises=exercises; updated.blocks=undefined; }
       setData(d => ({ ...d, workouts: d.workouts.map(x => x.id===editingId ? updated : x) }));
     } else {
       const wo = { id:Date.now(), date:today(), type:form.type, name:form.name, duration:+form.duration };
-      if (cfg.isCardio) { wo.blocks = blocks; }
-      else { wo.exercises = exercises; }
+      if (isFonc) { wo.foncBlocs=foncBlocs; wo.foncSubtype=foncSubtype; }
+      else if (cfg.isCardio) { wo.blocks=blocks; }
+      else { wo.exercises=exercises; }
       setData(d => ({ ...d, workouts:[wo,...d.workouts] }));
     }
     setScreen("list"); resetAdd();
@@ -1518,9 +1644,11 @@ function WorkoutView({ data, setData }) {
       setScreen("list");
     };
     const editWorkout = () => {
-      // Pre-fill the add form with existing workout data
       setForm({ name:w.name, type:w.type, duration:w.duration||"" });
-      if (ACTIVITY_TYPES[w.type]?.isCardio) {
+      if (w.foncBlocs) {
+        setFoncBlocs(w.foncBlocs.map(b=>({...b})));
+        setFoncSubtype(w.foncSubtype||"WOD");
+      } else if (ACTIVITY_TYPES[w.type]?.isCardio) {
         setBlocks((w.blocks||[]).map(b=>({...b})));
       } else {
         setExercises((w.exercises||[]).map(ex=>({...ex,
@@ -1557,7 +1685,9 @@ function WorkoutView({ data, setData }) {
                       color:form.type===t?c.color:T.muted,
                       fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:font }},React.createElement("span",null,c.icon),t)
                 ))))
-          ),React.createElement(Inp,{"label":"Durée totale","value":form.duration,"onChange":v => setForm(f=>({...f,duration:v})),"type":"number","unit":"min"})),cfg.isCardio ? (
+          ),React.createElement(Inp,{"label":"Durée totale","value":form.duration,"onChange":v => setForm(f=>({...f,duration:v})),"type":"number","unit":"min"})),cfg?.isFonctionnel ? (
+          React.createElement("div",{"style":{ marginBottom:14 }},React.createElement(FonctionnelForm,{"blocs":foncBlocs,"setBlocs":setFoncBlocs,"subtype":foncSubtype,"setSubtype":setFoncSubtype}))
+        ) : cfg?.isCardio ? (
           React.createElement("div",{"style":{ marginBottom:14 }},!fromTpl && React.createElement("div",{"style":{ fontSize:12, color:T.muted, marginBottom:10 }},"Décompose ta séance en blocs : échauffement, séries, retour au calme…"),React.createElement(CardioBlockForm,{"actType":form.type,"blocks":blocks,"setBlocks":setBlocks}))
         ) : (
           React.createElement("div",{"style":{ marginBottom:12 }},React.createElement(MuscuForm,{"exercises":exercises,"setExercises":setExercises,"isTemplate":!fromTpl && savingAsTemplate,"fromTemplate":!!fromTpl}))
@@ -2433,21 +2563,29 @@ function StepsSection({ data, setData }) {
   const stepsGoal = data.goals?.steps || 10000;
   const [inputs,  setInputs]  = useState({});
   const [editing, setEditing] = useState(null);
+  const [view,    setView]    = useState("today"); // "today" | "history"
 
   // Last 3 days including today
-  const days = Array.from({length:3}, (_,i) => {
+  const days3 = Array.from({length:3}, (_,i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
     return d.toLocaleDateString("fr-CA");
   });
 
+  // Last 30 days for history
+  const days30 = Array.from({length:30}, (_,i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    return d.toLocaleDateString("fr-CA");
+  });
+
   const dayLabel = (dateStr) => {
-    const d = new Date(dateStr + "T12:00");
     const t = today();
     if (dateStr === t) return "Aujourd'hui";
     const y = new Date(t + "T12:00");
     y.setDate(y.getDate() - 1);
     if (dateStr === y.toLocaleDateString("fr-CA")) return "Hier";
+    const d = new Date(dateStr + "T12:00");
     return d.toLocaleDateString("fr", { weekday:"long", day:"numeric" });
   };
 
@@ -2459,22 +2597,74 @@ function StepsSection({ data, setData }) {
     setEditing(null);
   };
 
+  // Stats
+  const last7 = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    return d.toLocaleDateString("fr-CA");
+  });
+  const avg7 = Math.round(last7.reduce((a,d)=>a+(stepsData[d]||0),0) / last7.filter(d=>stepsData[d]).length) || 0;
+  const best = Math.max(...Object.values(stepsData).filter(Boolean), 0);
+  const daysGoal = days30.filter(d => (stepsData[d]||0) >= stepsGoal).length;
+
+  // Mini bar chart values (last 14 days)
+  const chart14 = Array.from({length:14}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-(13-i));
+    return { date:d.toLocaleDateString("fr-CA"), steps:stepsData[d.toLocaleDateString("fr-CA")]||0 };
+  });
+  const chartMax = Math.max(...chart14.map(d=>d.steps), stepsGoal);
+
   return (
-    React.createElement(Card,{"style":{ marginTop:14 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }},React.createElement(Label,{"style":{ margin:0 }},"🚶 Pas"),React.createElement("div",{"style":{ fontSize:11, color:T.muted }},"Objectif :",stepsGoal.toLocaleString("fr"),"pas")),days.map(date => {
-        const steps = stepsData[date] || 0;
-        const pct   = Math.min(steps / stepsGoal, 1);
-        const isEdit = editing === date;
-        return (
-          React.createElement("div",{"key":date,"style":{ marginBottom:12 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }},React.createElement("span",{"style":{ fontSize:12, fontWeight:600, color:T.ink }},dayLabel(date)),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:14, fontWeight:700,
-                  color:steps>=stepsGoal?T.green:steps>=stepsGoal*0.6?T.orange:T.text }},steps > 0 ? steps.toLocaleString("fr") : "—"),React.createElement("button",{"onClick":() => setEditing(isEdit ? null : date),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:6,
-                    padding:"2px 8px", fontSize:11, color:T.muted, cursor:"pointer", fontFamily:font }},"✏️"))),React.createElement(Bar,{"val":steps,"total":stepsGoal,"color":steps>=stepsGoal?T.green:steps>=stepsGoal*0.6?T.orange:T.blue,"h":4}),isEdit && (
-              React.createElement("div",{"style":{ display:"flex", gap:6, marginTop:8 }},React.createElement("input",{"type":"number","value":inputs[date]||"","onChange":e => setInputs(i=>({...i,[date]:e.target.value})),"placeholder":steps > 0 ? steps.toString() : "Nombre de pas…","style":{ flex:1, background:T.bg, border:`1px solid ${T.border}`,
-                    borderRadius:8, padding:"7px 10px", fontSize:12, color:T.text,
-                    fontFamily:font, outline:"none" }}),React.createElement("button",{"onClick":() => save(date),"style":{ background:T.blue, border:"none", borderRadius:8, padding:"7px 14px",
-                    color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},"✓"))
-            ))
-        );
-      }))
+    React.createElement(Card,{"style":{ marginTop:14 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }},React.createElement(Label,{"style":{ margin:0 }},"🚶 Pas"),React.createElement("div",{"style":{ display:"flex", background:T.border, borderRadius:8, padding:2, gap:2 }},[["today","Saisie"],["history","Historique"]].map(([id,lbl]) => (
+            React.createElement("button",{"key":id,"onClick":()=>setView(id),"style":{ padding:"4px 10px", borderRadius:6, border:"none", cursor:"pointer",
+                fontFamily:font, fontWeight:600, fontSize:11,
+                background:view===id?T.surface:"transparent",
+                color:view===id?T.text:T.muted, transition:"all .12s" }},lbl)
+          )))),view === "today" && (
+        React.createElement(React.Fragment,null,React.createElement("div",{"style":{ fontSize:11, color:T.muted, marginBottom:10 }},"Objectif :",stepsGoal.toLocaleString("fr"),"pas/jour"),days3.map(date => {
+            const steps = stepsData[date] || 0;
+            const isEdit = editing === date;
+            return (
+              React.createElement("div",{"key":date,"style":{ marginBottom:12 }},React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }},React.createElement("span",{"style":{ fontSize:12, fontWeight:600, color:T.ink }},dayLabel(date)),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8 }},React.createElement("span",{"style":{ fontFamily:mono, fontSize:14, fontWeight:700,
+                      color:steps>=stepsGoal?T.green:steps>=stepsGoal*0.6?T.orange:T.text }},steps > 0 ? steps.toLocaleString("fr") : "—"),React.createElement("button",{"onClick":() => setEditing(isEdit ? null : date),"style":{ background:"none", border:`1px solid ${T.border}`, borderRadius:6,
+                        padding:"2px 8px", fontSize:11, color:T.muted, cursor:"pointer", fontFamily:font }},"✏️"))),React.createElement(Bar,{"val":steps,"total":stepsGoal,"color":steps>=stepsGoal?T.green:steps>=stepsGoal*0.6?T.orange:T.blue,"h":4}),isEdit && (
+                  React.createElement("div",{"style":{ display:"flex", gap:6, marginTop:8 }},React.createElement("input",{"type":"number","value":inputs[date]||"","onChange":e => setInputs(i=>({...i,[date]:e.target.value})),"placeholder":steps > 0 ? steps.toString() : "Nombre de pas…","style":{ flex:1, background:T.bg, border:`1px solid ${T.border}`,
+                        borderRadius:8, padding:"7px 10px", fontSize:12, color:T.text,
+                        fontFamily:font, outline:"none" }}),React.createElement("button",{"onClick":() => save(date),"style":{ background:T.blue, border:"none", borderRadius:8, padding:"7px 14px",
+                        color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:font }},"✓"))
+                ))
+            );
+          }))
+      ),view === "history" && (
+        React.createElement(React.Fragment,null,React.createElement("div",{"style":{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }},[[avg7>0?avg7.toLocaleString("fr"):"—","Moy. 7j"],
+              [best>0?best.toLocaleString("fr"):"—","Record"],
+              [daysGoal+"/30","Objectifs"]].map(([v,l]) => (
+              React.createElement("div",{"key":l,"style":{ background:T.bg, borderRadius:10, padding:"10px 8px",
+                border:`1px solid ${T.border}`, textAlign:"center" }},React.createElement("div",{"style":{ fontFamily:mono, fontSize:14, fontWeight:700, color:T.text }},v),React.createElement("div",{"style":{ fontSize:9, color:T.muted, letterSpacing:1, textTransform:"uppercase", marginTop:2 }},l))
+            ))),React.createElement("div",{"style":{ marginBottom:10 }},React.createElement("div",{"style":{ fontSize:10, color:T.muted, marginBottom:6 }},"14 derniers jours"),React.createElement("div",{"style":{ display:"flex", alignItems:"flex-end", gap:3, height:50 }},chart14.map((d,i) => {
+                const h = chartMax > 0 ? Math.max((d.steps/chartMax)*46, d.steps>0?3:0) : 0;
+                const isToday = d.date === today();
+                const hitGoal = d.steps >= stepsGoal;
+                return (
+                  React.createElement("div",{"key":i,"style":{ flex:1, display:"flex", flexDirection:"column",
+                    alignItems:"center", justifyContent:"flex-end", height:"100%" }},React.createElement("div",{"style":{ width:"100%", height:h, borderRadius:"3px 3px 0 0",
+                      background:hitGoal?T.green:d.steps>0?T.blue:T.border,
+                      opacity:isToday?1:0.75,
+                      outline:isToday?`2px solid ${T.gold}`:"none" }}))
+                );
+              })),React.createElement("div",{"style":{ display:"flex", justifyContent:"space-between", fontSize:8,
+              color:T.mutedLt, marginTop:4 }},React.createElement("span",null,chart14[0]?.date.slice(5).replace("-",".")),React.createElement("span",null,"Auj."))),React.createElement("div",{"style":{ maxHeight:200, overflowY:"auto" }},days30.filter(d=>stepsData[d]).reverse().map(date => {
+              const steps = stepsData[date];
+              return (
+                React.createElement("div",{"key":date,"style":{ display:"flex", justifyContent:"space-between",
+                  alignItems:"center", padding:"7px 0",
+                  borderTop:`1px solid ${T.border}` }},React.createElement("span",{"style":{ fontSize:12, color:T.muted }},new Date(date+"T12:00").toLocaleDateString("fr",{weekday:"short",day:"numeric",month:"short"})),React.createElement("div",{"style":{ display:"flex", alignItems:"center", gap:8 }},React.createElement("div",{"style":{ width:60, height:4, background:T.border, borderRadius:99, overflow:"hidden" }},React.createElement("div",{"style":{ width:`${Math.min(steps/stepsGoal*100,100)}%`, height:"100%",
+                        background:steps>=stepsGoal?T.green:T.blue, borderRadius:99 }})),React.createElement("span",{"style":{ fontFamily:mono, fontSize:13, fontWeight:700,
+                      color:steps>=stepsGoal?T.green:T.text }},steps.toLocaleString("fr")),steps >= stepsGoal && React.createElement("span",{"style":{ fontSize:10 }},"✅")))
+              );
+            }),days30.filter(d=>stepsData[d]).length === 0 && (
+              React.createElement("div",{"style":{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }},"Aucune donnée encore")
+            )))
+      ))
   );
 }
 
