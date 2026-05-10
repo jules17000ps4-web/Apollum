@@ -2247,7 +2247,7 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
   const isMobilite = !!cfg?.isMobilite;
   const isMuscu = !cfg?.isCardio && !isFonc && !isMobilite;
   const fields = BLOCK_FIELDS[w.type] || [];
-  const vol = isMuscu ? (w.exercises || []).reduce((a, ex) => {
+  const vol = isMuscu ? (w.exercises || []).filter((ex) => ex.kind !== "circuit").reduce((a, ex) => {
     const items = ex.items || [{ sets: ex.sets || [] }];
     return a + items.reduce((b, it) => {
       const mult = it.type === "halteres" ? 2 : 1;
@@ -2393,10 +2393,7 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
       /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 1fr", gap: 6, marginBottom: 4 } }, ["#", "Poids", "Reps", "Vol.", "Repos"].map((h) => /* @__PURE__ */ React.createElement("span", { key: h, style: { fontSize: 10, fontWeight: 600, color: T.mutedLt, letterSpacing: 0.5 } }, h))), it.sets.map((s, j) => /* @__PURE__ */ React.createElement("div", { key: j, style: { display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 1fr", gap: 6, padding: "6px 0", borderTop: `1px solid ${T.border}` } }, /* @__PURE__ */ React.createElement("span", { style: { color: T.mutedLt, fontSize: 13 } }, j + 1), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, s.w > 0 ? `${s.w} kg` : "PDC"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, s.r), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: T.green, fontFamily: mono } }, it.type === "halteres" ? (s.w || 0) * (s.r || 0) * 2 || "\u2014" : (s.w || 0) * (s.r || 0) || "\u2014"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: T.muted } }, s.rest ? `${s.rest}s` : "\u2014"))))
     ))), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", color: T.muted, fontSize: 11, marginTop: 8 } }, "Vol: ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: T.green, fontFamily: mono } }, exVol, " kg")));
   }),
-  // ─── Circuit finisher (Muscu) ─────────────────────────────────────────
-
-  // ─── Circuit (dans Muscu) ─────────────────────────────────────────────────
-  ), isMuscu && (w.exercises || []).some((ex) => ex.kind === "circuit") && React.createElement(Card, { style: { marginBottom: 10, border: "1px solid " + T.orange + "33", background: T.orange + "06" } },
+  isMuscu && (w.exercises || []).some((ex) => ex.kind === "circuit") && React.createElement(Card, { style: { marginBottom: 10, border: "1px solid " + T.orange + "33", background: T.orange + "06" } },
     React.createElement("div", { style: { fontWeight: 700, fontSize: 13, color: T.text, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 } }, "\u26A1", "Circuits"),
     (w.exercises || []).filter((ex) => ex.kind === "circuit").map((ex, ci) =>
       React.createElement("div", { key: ci, style: { marginBottom: ci < (w.exercises || []).filter((e) => e.kind === "circuit").length - 1 ? 12 : 0 } },
@@ -2627,10 +2624,12 @@ function WorkoutView({ data, setData }) {
       } else if (ACTIVITY_TYPES[w.type]?.isCardio) {
         setBlocks((w.blocks || []).map((b) => ({ ...b })));
       } else {
-        setExercises((w.exercises || []).map((ex) => ({
-          ...ex,
-          items: (ex.items || []).map((it) => ({ ...it, sets: (it.sets || []).map((s) => ({ ...s })) }))
-        })));
+        setExercises((w.exercises || []).map((ex) => (
+          ex.kind === "circuit" ? { ...ex } : {
+            ...ex,
+            items: (ex.items || []).map((it) => ({ ...it, sets: (it.sets || []).map((s) => ({ ...s })) }))
+          }
+        )));
       }
       setEditingId(selId);
       setScreen("add");
@@ -2782,7 +2781,7 @@ function WorkoutView({ data, setData }) {
   ))), listTab === "seances" && /* @__PURE__ */ React.createElement(React.Fragment, null, data.workouts.length === 0 && /* @__PURE__ */ React.createElement(Card, { style: { textAlign: "center", padding: "32px 0", color: T.muted, fontSize: 13 } }, "Aucune s\xE9ance enregistr\xE9e."), Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([month, ws]) => /* @__PURE__ */ React.createElement("div", { key: month }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 600, letterSpacing: 0.8, color: T.mutedLt, textTransform: "uppercase", marginBottom: 8 } }, (/* @__PURE__ */ new Date(month + "-15")).toLocaleDateString("fr", { month: "long", year: "numeric" })), ws.map((w) => {
     const c = ACTIVITY_TYPES[w.type];
     const isMuscu = !c?.isCardio;
-    const vol = isMuscu ? (w.exercises || []).reduce((a, ex) => {
+    const vol = isMuscu ? (w.exercises || []).filter((ex) => ex.kind !== "circuit").reduce((a, ex) => {
       const items = ex.items || [{ sets: ex.sets || [] }];
       return a + items.reduce((b, it) => {
         const mult = it.type === "halteres" ? 2 : 1;
