@@ -1542,7 +1542,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
         }
       );
     }));
-  })()) : /* @__PURE__ */ React.createElement(SetsEditor, { sets, setSets, exType, isTemplate })) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: {
+  })()) : /* @__PURE__ */ React.createElement(SetsEditor, { sets, setSets, exType, isTemplate })) : mode === "superset" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: {
     background: T.blue + "0A",
     border: `1px solid ${T.blue}22`,
     borderRadius: 10,
@@ -1662,8 +1662,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       exType: ssB.type,
       isTemplate
     }
-  )),
-  mode === "circuit" ? /* @__PURE__ */ React.createElement(React.Fragment, null,
+  )) : /* @__PURE__ */ React.createElement(React.Fragment, null,
     /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 12 } },
       [["restBetween", "Repos entre exos", "s", circRestTime, setCircRestTime], ["rounds", "Boucles", "x", circRounds, setCircRounds]].map(([circKey, circLbl, circUnit, circVal, circSetter]) =>
         /* @__PURE__ */ React.createElement("div", { key: circKey, style: { flex: 1, minWidth: 0 } },
