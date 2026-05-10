@@ -146,12 +146,6 @@ const ACTIVITY_TYPES = {
     icon: "🧘",
     isCardio: false,
     isMobilite: true
-  },
-  Athlétique: {
-    color: "#7B5EA7",
-    icon: "🏃️",
-    isCardio: false,
-    isAthletique: true
   }
 };
 const today = () => (/* @__PURE__ */ new Date()).toLocaleDateString("fr-CA");
@@ -824,6 +818,19 @@ const EXERCISE_BANK_SEED = [
   { id: "ex104", name: "Crunch c\xE2ble", group: "Abdos", type: "cable", unilateral: false, bodyweight: false },
   { id: "ex105", name: "Relev\xE9 de jambes barre", group: "Abdos", type: "poids_corps", unilateral: false, bodyweight: true },
   { id: "ex106", name: "Dragon flag", group: "Abdos", type: "poids_corps", unilateral: false, bodyweight: true },
+  // ─── PLIOMÉTRIE ─────────────────────────────────────────────────────────────────
+  { id: "ex110", name: "Box jump", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex111", name: "Squat sauté", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex112", name: "Fentes sautées", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex113", name: "Broad jump", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex114", name: "Depth jump", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex115", name: "Clap push-up", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex116", name: "Burpees", group: "Pliométrie", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex117", name: "Skater jump", group: "Pliométrie", type: "poids_corps", unilateral: true, bodyweight: true },
+  { id: "ex118", name: "Nordic curl", group: "Ischio / Athlétique", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex119", name: "Fente isométrique", group: "Ischio / Athlétique", type: "poids_corps", unilateral: true, bodyweight: true },
+  { id: "ex120", name: "Glute bridge explosif", group: "Ischio / Athlétique", type: "poids_corps", unilateral: false, bodyweight: true },
+  { id: "ex121", name: "Copenhagen plank", group: "Adducteurs", type: "poids_corps", unilateral: true, bodyweight: true },
   // ─── CARDIO ───────────────────────────────────────────────────────────────────
   // cardio_metrics : champs à afficher pour ce type de cardio
   {
@@ -1228,6 +1235,11 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
   const [sets, setSets] = useState([{ w: "", r: "", rest: "90" }]);
   const [ssA, setSsA] = useState({ name: "", type: "barre", sets: [{ w: "", r: "", rest: "0" }] });
   const [ssB, setSsB] = useState({ name: "", type: "barre", sets: [{ w: "", r: "", rest: "90" }] });
+  const [circExs, setCircExs] = useState([]);
+  const [circWorkTime, setCircWorkTime] = useState("30");
+  const [circRestTime, setCircRestTime] = useState("10");
+  const [circRounds, setCircRounds] = useState("3");
+  const [circPickerOpen, setCircPickerOpen] = useState(false);
   const moveEx = (from, to) => setExercises((es) => {
     const arr = [...es];
     const [item] = arr.splice(from, 1);
@@ -1241,6 +1253,10 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
     setSets([{ w: "", r: "", rest: "90" }]);
     setSsA({ name: "", type: "barre", sets: [{ w: "", r: "", rest: "0" }] });
     setSsB({ name: "", type: "barre", sets: [{ w: "", r: "", rest: "90" }] });
+    setCircExs([]);
+    setCircWorkTime("30");
+    setCircRestTime("10");
+    setCircRounds("3");
   };
   const parseSets = (rawSets, type) => isTemplate ? rawSets.map((s) => ({ w: "", r: s.r || "", rest: s.rest || "" })) : rawSets.filter((s) => s.r).map((s) => ({ w: +s.w || 0, r: +s.r, rest: +s.rest || 0 }));
   const commit = () => {
@@ -1262,6 +1278,15 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       setExercises((es) => [...es, {
         kind: "single",
         items: [{ name: exName, type: exType, sets: parsed }]
+      }]);
+    } else if (mode === "circuit") {
+      if (circExs.length === 0) return;
+      setExercises((es) => [...es, {
+        kind: "circuit",
+        exercises: circExs,
+        workTime: circWorkTime,
+        restTime: circRestTime,
+        rounds: circRounds
       }]);
     } else {
       if (!ssA.name || !ssB.name) return;
@@ -1336,7 +1361,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       fontSize: 10,
       fontWeight: 700,
       marginRight: 6
-    } }, "\u26A1 SS"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: T.ink } }, isSuperset ? (ex.items || []).map((it) => it.name).join(" + ") : ex.items?.[0]?.name), !isSuperset && ex.items?.[0]?.type && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: T.muted, marginTop: 2 } }, EXERCISE_TYPES[ex.items[0].type]?.icon, " ", EXERCISE_TYPES[ex.items[0].type]?.label, ex.items[0].type === "halteres" && /* @__PURE__ */ React.createElement("span", { style: { color: T.gold } }, " \xB7 \xD72 vol."))), /* @__PURE__ */ React.createElement(
+    } }, "\u26A1 SS"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: T.ink } }, ex.kind === "circuit" ? "\u26A1 Circuit" : isSuperset ? (ex.items || []).map((it) => it.name).join(" + ") : ex.items?.[0]?.name), !isSuperset && ex.kind !== "circuit" && ex.items?.[0]?.type && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: T.muted, marginTop: 2 } }, EXERCISE_TYPES[ex.items[0].type]?.icon, " ", EXERCISE_TYPES[ex.items[0].type]?.label, ex.items[0].type === "halteres" && /* @__PURE__ */ React.createElement("span", { style: { color: T.gold } }, " \xB7 \xD72 vol."))), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => removeEx(i),
@@ -1369,7 +1394,23 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       fontSize: 9,
       color: T.muted,
       fontWeight: 700
-    } }, "ENCHA\xCEN\xC9")))) : ex.items?.[0]?.type === "cardio" ? (
+    } }, "ENCHA\xCEN\xC9")))) : ex.kind === "circuit" ? (
+      /* @__PURE__ */ React.createElement("div", null,
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 6 } },
+          [["Travail", ex.workTime, "s"], ["Repos", ex.restTime, "s"], ["Tours", ex.rounds, "x"]].map(([circL, circV, circU]) =>
+            /* @__PURE__ */ React.createElement("div", { key: circL, style: { background: T.bg, border: "1px solid " + T.border, borderRadius: 7, padding: "4px 8px", textAlign: "center" } },
+              /* @__PURE__ */ React.createElement("div", { style: { fontFamily: mono, fontWeight: 700, fontSize: 13, color: T.text } }, circL === "Tours" ? circU + circV : circV + circU),
+              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.4 } }, circL)
+            )
+          )
+        ),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
+          (ex.exercises || []).map((circName, ci) =>
+            /* @__PURE__ */ React.createElement("span", { key: ci, style: { background: T.orange + "14", color: T.text, border: "1px solid " + T.border, borderRadius: 6, padding: "2px 8px", fontSize: 11 } }, circName)
+          )
+        )
+      )
+    ) : ex.items?.[0]?.type === "cardio" ? (
       // Cardio exercise — show metrics grid
       /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 } }, Object.entries(ex.items?.[0]?.sets?.[0] || {}).filter(([k, v]) => v).map(([k, v]) => {
         const m = CARDIO_METRICS_LABELS[k] || { label: k, unit: "" };
@@ -1395,7 +1436,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
         isTemplate
       }
     )));
-  })), !fromTemplate && /* @__PURE__ */ React.createElement(Card, { pad: 13 }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", background: T.border, borderRadius: 8, padding: 2, gap: 2, marginBottom: 12 } }, [["single", "Exercice"], ["superset", "Superset"]].map(([m, lbl]) => /* @__PURE__ */ React.createElement(
+  })), !fromTemplate && /* @__PURE__ */ React.createElement(Card, { pad: 13 }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", background: T.border, borderRadius: 8, padding: 2, gap: 2, marginBottom: 12 } }, [["single", "Exercice", null], ["superset", "Superset", "A+B"], ["circuit", "Circuit", "\u26A1"]].map(([m, lbl, badge]) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: m,
@@ -1418,7 +1459,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       }
     },
     lbl,
-    m === "superset" && /* @__PURE__ */ React.createElement("span", { style: { color: T.purple, marginLeft: 4, fontSize: 10 } }, "A+B")
+    badge && /* @__PURE__ */ React.createElement("span", { style: { color: m === "circuit" ? T.orange : T.purple, marginLeft: 4, fontSize: 10 } }, badge)
   ))), mode === "single" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8 } }, /* @__PURE__ */ React.createElement(
     "input",
     {
@@ -1621,7 +1662,32 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       exType: ssB.type,
       isTemplate
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Btn, { onClick: commit, size: "sm" }, mode === "superset" ? "\u2713 Valider le superset" : "\u2713 Valider l'exercice"))));
+  )),
+  mode === "circuit" ? /* @__PURE__ */ React.createElement(React.Fragment, null,
+    /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 } },
+      [["workTime", "Travail", "s", circWorkTime, setCircWorkTime], ["restTime", "Repos", "s", circRestTime, setCircRestTime], ["rounds", "Tours", "x", circRounds, setCircRounds]].map(([circKey, circLbl, circUnit, circVal, circSetter]) =>
+        /* @__PURE__ */ React.createElement("div", { key: circKey },
+          /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 600, color: T.mutedLt, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 } }, circLbl),
+          /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", background: T.surface, border: "1px solid " + T.border, borderRadius: 8, overflow: "hidden" } },
+            /* @__PURE__ */ React.createElement("input", { type: "number", value: circVal, onChange: (ev) => circSetter(ev.target.value), placeholder: circVal, style: { flex: 1, background: "none", border: "none", outline: "none", padding: "7px 6px", fontSize: 14, color: T.text, fontFamily: mono, fontWeight: 700, textAlign: "center", minWidth: 0 } }),
+            /* @__PURE__ */ React.createElement("span", { style: { color: T.mutedLt, fontSize: 11, paddingRight: 6 } }, circUnit)
+          )
+        )
+      )
+    ),
+    /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 7 } }, "Exercices du circuit"),
+    circExs.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 } },
+      circExs.map((circName, ci) =>
+        /* @__PURE__ */ React.createElement("div", { key: ci, style: { display: "flex", alignItems: "center", gap: 4, background: T.orange + "18", border: "1px solid " + T.orange + "44", borderRadius: 8, padding: "4px 8px" } },
+          /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500 } }, circName),
+          /* @__PURE__ */ React.createElement("button", { onClick: () => setCircExs((es) => es.filter((_, cj) => cj !== ci)), style: { background: "none", border: "none", color: T.mutedLt, cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 } }, "\xD7")
+        )
+      )
+    ),
+    circPickerOpen && /* @__PURE__ */ React.createElement(ExercisePicker, { onSelect: (pickedEx) => { if (pickedEx) setCircExs((es) => [...es, pickedEx.name]); setCircPickerOpen(false); }, onClose: () => setCircPickerOpen(false) }),
+    /* @__PURE__ */ React.createElement("button", { onClick: () => setCircPickerOpen(true), style: { display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "none", border: "1px dashed " + T.border, borderRadius: 9, color: T.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font } }, "\uD83D\uDCDA Ajouter un exercice")
+  ) : null,
+  /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Btn, { onClick: commit, size: "sm" }, mode === "superset" ? "\u2713 Valider le superset" : mode === "circuit" ? "\u2713 Valider le circuit" : "\u2713 Valider l'exercice")))));
 }
 const inpStyle = {
   background: T.bg,
@@ -1845,106 +1911,6 @@ function MobiliteForm({ blocs, setBlocs, subtype, setSubtype }) {
   );
 }
 
-// ─── ATHLÉTIQUE ────────────────────────────────────────────────────────────────
-const ATHLE_SUBTYPES = [
-  { id: "Pliometrie", label: "Pliométrie", icon: "💥", color: "#7B5EA7" },
-  { id: "RenfoSpecifique", label: "Renfo spécifique", icon: "🎯", color: "#5A7EA7" }
-];
-const emptyAthleBloc = () => ({ id: Date.now() + Math.random(), nom: "", reps: "", dureeIso: "", tempsTravail: "", tempsRepos: "", cote: "", note: "" });
-function AthletiqueBlocEditor({ bloc, onChange, onRemove, idx }) {
-  const T2 = useTheme();
-  const color = "#7B5EA7";
-  return React.createElement("div", { style: { border: `1px solid ${T2.border}`, borderRadius: 12, padding: 12, marginBottom: 10, background: T2.bg, overflow: "hidden" } },
-    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } },
-      React.createElement("div", { style: { width: 22, height: 22, borderRadius: 6, background: color + "22", color, fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" } }, idx + 1),
-      React.createElement("button", { onClick: onRemove, style: { background: "none", border: "none", color: T2.mutedLt, cursor: "pointer", fontSize: 16, padding: 0 } }, "×")
-    ),
-    React.createElement("input", { value: bloc.nom, onChange: (e) => onChange({ ...bloc, nom: e.target.value }), placeholder: "Ex: Box jump, Fentes iso, Nordic curl…", style: { ...rawInp, width: "100%", fontWeight: 600, marginBottom: 8 } }),
-    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 } },
-      [
-        { key: "reps", label: "Reps", unit: "", ph: "10" },
-        { key: "dureeIso", label: "Durée iso", unit: "s", ph: "45" },
-        { key: "tempsTravail", label: "Tps travail", unit: "s", ph: "30" },
-        { key: "tempsRepos", label: "Tps repos", unit: "s", ph: "60" }
-      ].map((f) => React.createElement("div", { key: f.key },
-        React.createElement("div", { style: { fontSize: 9, color: T2.mutedLt, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 } }, f.label),
-        React.createElement("div", { style: { display: "flex", alignItems: "center", background: T2.surface, border: `1px solid ${T2.border}`, borderRadius: 8, overflow: "hidden" } },
-          React.createElement("input", { type: "number", value: bloc[f.key] || "", onChange: (e) => onChange({ ...bloc, [f.key]: e.target.value }), placeholder: f.ph, style: { flex: 1, background: "none", border: "none", outline: "none", padding: "7px 8px", fontSize: 13, color: T2.text, fontFamily: font, minWidth: 0 } }),
-          f.unit && React.createElement("span", { style: { color: T2.mutedLt, fontSize: 10, paddingRight: 6 } }, f.unit)
-        )
-      ))
-    ),
-    React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 8 } },
-      [{ id: "", label: "—" }, { id: "gauche", label: "Gauche" }, { id: "droite", label: "Droite" }].map((c) => React.createElement("button", { key: c.id, onClick: () => onChange({ ...bloc, cote: c.id }), style: { flex: 1, padding: "5px 6px", borderRadius: 7, border: `1px solid ${bloc.cote === c.id ? color : T2.border}`, background: bloc.cote === c.id ? color + "18" : "transparent", color: bloc.cote === c.id ? color : T2.muted, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: font } }, c.label))
-    ),
-    React.createElement("input", { value: bloc.note, onChange: (e) => onChange({ ...bloc, note: e.target.value }), placeholder: "Note libre…", style: { ...rawInp, width: "100%", fontSize: 12 } })
-  );
-}
-function AthletiqueForm({ blocs, setBlocs, subtype, setSubtype }) {
-  const T2 = useTheme();
-  const addBloc = () => setBlocs((bs) => [...bs, emptyAthleBloc()]);
-  const updateBloc = (i, b) => setBlocs((bs) => bs.map((x, j) => j === i ? b : x));
-  const removeBloc = (i) => setBlocs((bs) => bs.filter((_, j) => j !== i));
-  const moveBloc = (from, to) => setBlocs((bs) => { const arr = [...bs]; const [item] = arr.splice(from, 1); arr.splice(to, 0, item); return arr; });
-  return React.createElement("div", null,
-    React.createElement("div", { style: { marginBottom: 10 } },
-      React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: T2.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 } }, "Sous-type"),
-      React.createElement("div", { style: { display: "flex", gap: 8 } },
-        ATHLE_SUBTYPES.map((s) => React.createElement("button", { key: s.id, onClick: () => setSubtype(s.id), style: { flex: 1, padding: "8px 10px", borderRadius: 9, border: `1px solid ${subtype === s.id ? s.color : T2.border}`, background: subtype === s.id ? s.color + "18" : "transparent", color: subtype === s.id ? s.color : T2.muted, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: font, display: "flex", alignItems: "center", gap: 5, justifyContent: "center" } }, s.icon, " ", s.label))
-      )
-    ),
-    blocs.map((b, i) => React.createElement("div", { key: b.id, style: { display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 8 } },
-      React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 3, paddingTop: 14, flexShrink: 0 } },
-        React.createElement("button", { onClick: () => i > 0 && moveBloc(i, i - 1), style: { background: "none", border: "none", color: i > 0 ? T2.muted : T2.border, cursor: i > 0 ? "pointer" : "default", fontSize: 14, padding: 0, lineHeight: 1 } }, "↑"),
-        React.createElement("button", { onClick: () => i < blocs.length - 1 && moveBloc(i, i + 1), style: { background: "none", border: "none", color: i < blocs.length - 1 ? T2.muted : T2.border, cursor: i < blocs.length - 1 ? "pointer" : "default", fontSize: 14, padding: 0, lineHeight: 1 } }, "↓")
-      ),
-      React.createElement("div", { style: { flex: 1, minWidth: 0, overflow: "hidden" } },
-        React.createElement(AthletiqueBlocEditor, { idx: i, bloc: b, onChange: (nb) => updateBloc(i, nb), onRemove: () => removeBloc(i) })
-      )
-    )),
-    React.createElement(Btn, { onClick: addBloc, variant: "outline", size: "sm" }, "+ Exercice")
-  );
-}
-
-// ─── CIRCUIT MUSCU ─────────────────────────────────────────────────────────────
-const CIRCUIT_EXERCISES = ["Crunch", "Mountain climbers", "Russian twist", "Leg raises", "Planche (gainage)", "Crunch inversé", "Ab wheel (molette)", "Dragon flag", "Burpees", "Jumping jacks", "Mountain Climber", "Squat sauté"];
-function CircuitBlocForm({ circuit, setCircuit }) {
-  const T2 = useTheme();
-  const color = "#B87333";
-  const toggle = (ex) => setCircuit((c) => {
-    const exs = c.exercises || [];
-    return { ...c, exercises: exs.includes(ex) ? exs.filter((e) => e !== ex) : [...exs, ex] };
-  });
-  return React.createElement("div", null,
-    React.createElement(Card, { style: { marginBottom: 0, border: `1px solid ${color}33`, background: color + "06" } },
-      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } },
-        React.createElement("span", { style: { fontSize: 16 } }, "⚡"),
-        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: T2.text } }, "Circuit finisher"),
-        React.createElement("button", { onClick: () => setCircuit(null), style: { marginLeft: "auto", background: "none", border: "none", color: T2.mutedLt, cursor: "pointer", fontSize: 16, padding: 0 } }, "×")
-      ),
-      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 } },
-        [
-          { key: "workTime", label: "Travail", unit: "s", ph: "30" },
-          { key: "restTime", label: "Repos", unit: "s", ph: "10" },
-          { key: "rounds", label: "Tours", unit: "×", ph: "3" }
-        ].map((f) => React.createElement("div", { key: f.key },
-          React.createElement("div", { style: { fontSize: 9, color: T2.mutedLt, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 } }, f.label),
-          React.createElement("div", { style: { display: "flex", alignItems: "center", background: T2.surface, border: `1px solid ${T2.border}`, borderRadius: 8, overflow: "hidden" } },
-            React.createElement("input", { type: "number", value: (circuit || {})[f.key] || "", onChange: (e) => setCircuit((c) => ({ ...(c || {}), [f.key]: e.target.value })), placeholder: f.ph, style: { flex: 1, background: "none", border: "none", outline: "none", padding: "7px 6px", fontSize: 13, color: T2.text, fontFamily: font, minWidth: 0, textAlign: "center", fontFamily: mono, fontWeight: 700 } }),
-            React.createElement("span", { style: { color: T2.mutedLt, fontSize: 10, paddingRight: 5 } }, f.unit)
-          )
-        ))
-      ),
-      React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: T2.muted, marginBottom: 7 } }, "Exercices"),
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
-        CIRCUIT_EXERCISES.map((ex) => {
-          const sel = (circuit?.exercises || []).includes(ex);
-          return React.createElement("button", { key: ex, onClick: () => toggle(ex), style: { padding: "5px 10px", borderRadius: 8, border: `1px solid ${sel ? color : T2.border}`, background: sel ? color + "18" : "transparent", color: sel ? color : T2.muted, fontSize: 11, fontWeight: sel ? 700 : 500, cursor: "pointer", fontFamily: font } }, ex);
-        })
-      )
-    )
-  );
-}
 
 const FONC_SUBTYPES = [
   { id: "WOD", label: "WOD", icon: "\u{1F4A5}", color: "#9B3A2E" },
@@ -2279,8 +2245,7 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
   const cfg = ACTIVITY_TYPES[w.type];
   const isFonc = !!cfg?.isFonctionnel;
   const isMobilite = !!cfg?.isMobilite;
-  const isAthletique = !!cfg?.isAthletique;
-  const isMuscu = !cfg?.isCardio && !isFonc && !isMobilite && !isAthletique;
+  const isMuscu = !cfg?.isCardio && !isFonc && !isMobilite;
   const fields = BLOCK_FIELDS[w.type] || [];
   const vol = isMuscu ? (w.exercises || []).reduce((a, ex) => {
     const items = ex.items || [{ sets: ex.sets || [] }];
@@ -2429,26 +2394,7 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
     ))), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", color: T.muted, fontSize: 11, marginTop: 8 } }, "Vol: ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: T.green, fontFamily: mono } }, exVol, " kg")));
   }),
   // ─── Circuit finisher (Muscu) ─────────────────────────────────────────
-  isMuscu && w.circuitBloc && (w.circuitBloc.exercises || []).length > 0 && React.createElement(Card, { style: { marginBottom: 10, border: "1px solid #B8733333", background: "#B8733306" } },
-    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } },
-      React.createElement("span", { style: { fontSize: 14 } }, "\u26A1"),
-      React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: T.text } }, "Circuit finisher"),
-      React.createElement("span", { style: { marginLeft: "auto", background: "#B8733318", color: "#B87333", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, (w.circuitBloc.rounds || "?") + " tours")
-    ),
-    React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
-      [["Travail", w.circuitBloc.workTime, "s"], ["Repos", w.circuitBloc.restTime, "s"]].map(([l, v, u]) =>
-        React.createElement("div", { key: l, style: { flex: 1, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center" } },
-          React.createElement("div", { style: { fontFamily: mono, fontWeight: 700, fontSize: 16, color: T.text } }, v || "—", React.createElement("span", { style: { fontSize: 11, color: T.muted } }, " " + u)),
-          React.createElement("div", { style: { fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: 0.5 } }, l)
-        )
-      )
-    ),
-    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
-      (w.circuitBloc.exercises || []).map((ex) =>
-        React.createElement("span", { key: ex, style: { background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, padding: "4px 9px", fontSize: 12, color: T.text, fontWeight: 500 } }, ex)
-      )
-    )
-  ),
+
   // ─── Mobilité ─────────────────────────────────────────────────────────
   isMobilite && React.createElement("div", null,
     w.mobiliteSubtype && React.createElement("div", { style: { marginBottom: 12 } }, (() => {
@@ -2475,31 +2421,7 @@ function WorkoutDetail({ workout: w, onBack, onDelete, onEdit, allWorkouts }) {
       )
     )
   ),
-  // ─── Athlétique ────────────────────────────────────────────────────────
-  isAthletique && React.createElement("div", null,
-    w.athleSubtype && React.createElement("div", { style: { marginBottom: 12 } }, (() => {
-      const st = ATHLE_SUBTYPES.find((s) => s.id === w.athleSubtype);
-      return st ? React.createElement("span", { style: { background: st.color + "22", color: st.color, border: `1px solid ${st.color}44`, borderRadius: 8, padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, st.icon, " ", st.label) : null;
-    })()),
-    (w.athleBlocs || []).map((bloc, i) =>
-      React.createElement(Card, { key: i, style: { marginBottom: 10 } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 } },
-          React.createElement("div", { style: { fontWeight: 700, fontSize: 14, color: T.text } }, bloc.nom || "Exercice " + (i + 1)),
-          bloc.cote && React.createElement("span", { style: { background: "#7B5EA718", color: "#7B5EA7", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, bloc.cote.charAt(0).toUpperCase() + bloc.cote.slice(1))
-        ),
-        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-          [["reps", "Reps", ""], ["dureeIso", "Iso", "s"], ["tempsTravail", "Travail", "s"], ["tempsRepos", "Repos", "s"]].filter(([k]) => bloc[k]).map(([k, l, u]) =>
-            React.createElement("div", { key: k, style: { background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 10px", textAlign: "center" } },
-              React.createElement("div", { style: { fontFamily: mono, fontWeight: 700, fontSize: 14 } }, bloc[k], u && React.createElement("span", { style: { fontSize: 10, color: T.muted } }, " " + u)),
-              React.createElement("div", { style: { fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.5 } }, l)
-            )
-          )
-        ),
-        bloc.note && React.createElement("div", { style: { marginTop: 6, fontSize: 12, color: T.muted, fontStyle: "italic" } }, bloc.note)
-      )
-    )
-  ),
-  isFonc && /* @__PURE__ */ React.createElement("div", null, w.foncSubtype && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, (() => {
+    isFonc && /* @__PURE__ */ React.createElement("div", null, w.foncSubtype && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, (() => {
     const st = FONC_SUBTYPES.find((s) => s.id === w.foncSubtype);
     return st ? /* @__PURE__ */ React.createElement("span", { style: {
       background: st.color + "22",
@@ -2574,9 +2496,6 @@ function WorkoutView({ data, setData }) {
   const [foncSubtype, setFoncSubtype] = useState("WOD");
   const [mobiliteBlocs, setMobiliteBlocs] = useState([]);
   const [mobiliteSubtype, setMobiliteSubtype] = useState("Statique");
-  const [athleBlocs, setAthleBlocs] = useState([]);
-  const [athleSubtype, setAthleSubtype] = useState("Pliometrie");
-  const [circuitBloc, setCircuitBloc] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const cfg = ACTIVITY_TYPES[form.type];
   const resetAdd = () => {
@@ -2587,9 +2506,6 @@ function WorkoutView({ data, setData }) {
     setFoncSubtype("WOD");
     setMobiliteBlocs([]);
     setMobiliteSubtype("Statique");
-    setAthleBlocs([]);
-    setAthleSubtype("Pliometrie");
-    setCircuitBloc(null);
     setSavingAsTemplate(false);
     setEditingId(null);
   };
@@ -2609,22 +2525,16 @@ function WorkoutView({ data, setData }) {
         updated.foncBlocs = foncBlocs;
         updated.foncSubtype = foncSubtype;
         updated.exercises = void 0; updated.blocks = void 0;
-        updated.mobiliteBlocs = void 0; updated.athleBlocs = void 0;
+        updated.mobiliteBlocs = void 0;
       } else if (cfg?.isMobilite) {
         updated.mobiliteBlocs = mobiliteBlocs;
         updated.mobiliteSubtype = mobiliteSubtype;
-        updated.exercises = void 0; updated.blocks = void 0; updated.foncBlocs = void 0;
-      } else if (cfg?.isAthletique) {
-        updated.athleBlocs = athleBlocs;
-        updated.athleSubtype = athleSubtype;
         updated.exercises = void 0; updated.blocks = void 0; updated.foncBlocs = void 0;
       } else if (cfg.isCardio) {
         updated.blocks = blocks;
         updated.exercises = void 0;
       } else {
         updated.exercises = exercises;
-        if (circuitBloc && (circuitBloc.exercises || []).length > 0) updated.circuitBloc = circuitBloc;
-        else updated.circuitBloc = void 0;
         updated.blocks = void 0;
       }
       setData((d) => ({ ...d, workouts: d.workouts.map((x) => x.id === editingId ? updated : x) }));
@@ -2636,14 +2546,10 @@ function WorkoutView({ data, setData }) {
       } else if (cfg?.isMobilite) {
         wo.mobiliteBlocs = mobiliteBlocs;
         wo.mobiliteSubtype = mobiliteSubtype;
-      } else if (cfg?.isAthletique) {
-        wo.athleBlocs = athleBlocs;
-        wo.athleSubtype = athleSubtype;
       } else if (cfg.isCardio) {
         wo.blocks = blocks;
       } else {
         wo.exercises = exercises;
-        if (circuitBloc && (circuitBloc.exercises || []).length > 0) wo.circuitBloc = circuitBloc;
       }
       setData((d) => ({ ...d, workouts: [wo, ...d.workouts] }));
     }
@@ -2694,9 +2600,6 @@ function WorkoutView({ data, setData }) {
       } else if (w.mobiliteBlocs) {
         setMobiliteBlocs(w.mobiliteBlocs.map((b) => ({ ...b })));
         setMobiliteSubtype(w.mobiliteSubtype || "Statique");
-      } else if (w.athleBlocs) {
-        setAthleBlocs(w.athleBlocs.map((b) => ({ ...b })));
-        setAthleSubtype(w.athleSubtype || "Pliometrie");
       } else if (ACTIVITY_TYPES[w.type]?.isCardio) {
         setBlocks((w.blocks || []).map((b) => ({ ...b })));
       } else {
@@ -2704,7 +2607,6 @@ function WorkoutView({ data, setData }) {
           ...ex,
           items: (ex.items || []).map((it) => ({ ...it, sets: (it.sets || []).map((s) => ({ ...s })) }))
         })));
-        if (w.circuitBloc) setCircuitBloc({ ...w.circuitBloc });
       }
       setEditingId(selId);
       setScreen("add");
@@ -2794,15 +2696,7 @@ function WorkoutView({ data, setData }) {
         subtype: mobiliteSubtype,
         setSubtype: setMobiliteSubtype
       }
-    )) : cfg?.isAthletique ? /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(
-      AthletiqueForm,
-      {
-        blocs: athleBlocs,
-        setBlocs: setAthleBlocs,
-        subtype: athleSubtype,
-        setSubtype: setAthleSubtype
-      }
-    )) : cfg?.isCardio ? /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, !fromTpl && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: T.muted, marginBottom: 10 } }, "D\xE9compose ta s\xE9ance en blocs : \xE9chauffement, s\xE9ries, retour au calme\u2026"), /* @__PURE__ */ React.createElement(CardioBlockForm, { actType: form.type, blocks, setBlocks })) : /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement(MuscuForm, { exercises, setExercises, isTemplate: !fromTpl && savingAsTemplate, fromTemplate: !!fromTpl }), !savingAsTemplate && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12 } }, circuitBloc === null ? /* @__PURE__ */ React.createElement("button", { onClick: () => setCircuitBloc({ exercises: [], workTime: "30", restTime: "10", rounds: "3" }), style: { display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 10, color: T.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font, width: "100%" } }, "\u26A1 Ajouter un circuit finisher") : /* @__PURE__ */ React.createElement(CircuitBlocForm, { circuit: circuitBloc, setCircuit: setCircuitBloc }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, savingAsTemplate && !fromTpl ? /* @__PURE__ */ React.createElement(Btn, { onClick: saveTemplate }, "\u{1F4BE} Sauver le mod\xE8le") : /* @__PURE__ */ React.createElement(Btn, { onClick: saveWorkout }, "Enregistrer la s\xE9ance")));
+    )) : cfg?.isCardio ? /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, !fromTpl && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: T.muted, marginBottom: 10 } }, "D\xE9compose ta s\xE9ance en blocs : \xE9chauffement, s\xE9ries, retour au calme\u2026"), /* @__PURE__ */ React.createElement(CardioBlockForm, { actType: form.type, blocks, setBlocks })) : /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement(MuscuForm, { exercises, setExercises, isTemplate: !fromTpl && savingAsTemplate, fromTemplate: !!fromTpl })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, savingAsTemplate && !fromTpl ? /* @__PURE__ */ React.createElement(Btn, { onClick: saveTemplate }, "\u{1F4BE} Sauver le mod\xE8le") : /* @__PURE__ */ React.createElement(Btn, { onClick: saveWorkout }, "Enregistrer la s\xE9ance")));
   }
   const grouped = {};
   data.workouts.forEach((w) => {
@@ -2885,7 +2779,7 @@ function WorkoutView({ data, setData }) {
     setScreen("add");
   }, size: "sm" }, "+ Cr\xE9er une s\xE9ance")) : /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: T.muted, marginBottom: 12 } }, "Tape sur un mod\xE8le pour lancer la s\xE9ance \u2014 tu n'auras plus qu'\xE0 remplir les charges."), templates.map((tpl, i) => {
     const c = ACTIVITY_TYPES[tpl.type];
-    const isMuscu = !c?.isCardio && !c?.isFonctionnel && !c?.isMobilite && !c?.isAthletique;
+    const isMuscu = !c?.isCardio && !c?.isFonctionnel && !c?.isMobilite;
     const exCount = (tpl.exercises || []).length;
     const blockCount = (tpl.blocks || []).length;
     return /* @__PURE__ */ React.createElement(Card, { key: tpl.id, style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: {
