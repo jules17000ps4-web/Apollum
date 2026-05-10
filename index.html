@@ -2572,6 +2572,11 @@ function WorkoutView({ data, setData }) {
   const [blocks, setBlocks] = useState([]);
   const [foncBlocs, setFoncBlocs] = useState([]);
   const [foncSubtype, setFoncSubtype] = useState("WOD");
+  const [mobiliteBlocs, setMobiliteBlocs] = useState([]);
+  const [mobiliteSubtype, setMobiliteSubtype] = useState("Statique");
+  const [athleBlocs, setAthleBlocs] = useState([]);
+  const [athleSubtype, setAthleSubtype] = useState("Pliometrie");
+  const [circuitBloc, setCircuitBloc] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const cfg = ACTIVITY_TYPES[form.type];
   const resetAdd = () => {
