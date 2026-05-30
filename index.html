@@ -2672,8 +2672,6 @@ function WorkoutView({ data, setData }) {
         key: String(isTpl),
         onClick: () => {
           setSavingAsTemplate(isTpl);
-          setExercises([]);
-          setBlocks([]);
         },
         style: {
           flex: 1,
@@ -2804,7 +2802,7 @@ function WorkoutView({ data, setData }) {
     lbl
   ))), listTab === "seances" && /* @__PURE__ */ React.createElement(React.Fragment, null, data.workouts.length === 0 && /* @__PURE__ */ React.createElement(Card, { style: { textAlign: "center", padding: "32px 0", color: T.muted, fontSize: 13 } }, "Aucune s\xE9ance enregistr\xE9e."), Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([month, ws]) => /* @__PURE__ */ React.createElement("div", { key: month }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 600, letterSpacing: 0.8, color: T.mutedLt, textTransform: "uppercase", marginBottom: 8 } }, (/* @__PURE__ */ new Date(month + "-15")).toLocaleDateString("fr", { month: "long", year: "numeric" })), ws.map((w) => {
     const c = ACTIVITY_TYPES[w.type];
-    const isMuscu = !c?.isCardio;
+    const isMuscu = !c?.isCardio && !c?.isFonctionnel && !c?.isMobilite;
     const vol = isMuscu ? (w.exercises || []).filter((ex) => ex.kind !== "circuit").reduce((a, ex) => {
       const items = ex.items || [{ sets: ex.sets || [] }];
       return a + items.reduce((b, it) => {
