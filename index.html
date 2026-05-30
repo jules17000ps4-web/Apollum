@@ -2585,13 +2585,22 @@ function WorkoutView({ data, setData }) {
   const saveTemplate = () => {
     if (!form.name) return;
     const tpl = { id: "t" + Date.now(), type: form.type, name: form.name };
-    if (cfg.isCardio) {
+    if (cfg?.isFonctionnel) {
+      tpl.foncBlocs = foncBlocs.map((b) => ({ ...b }));
+      tpl.foncSubtype = foncSubtype;
+    } else if (cfg?.isMobilite) {
+      tpl.mobiliteBlocs = mobiliteBlocs.map((b) => ({ ...b }));
+      tpl.mobiliteSubtype = mobiliteSubtype;
+    } else if (cfg?.isCardio) {
       tpl.blocks = blocks.map((b) => ({ ...b, bpm: "", time: "", pace: "" }));
     } else {
-      tpl.exercises = exercises.map((ex) => ({ ...ex, items: (ex.items || [{ name: ex.items?.[0]?.name || "", sets: [] }]).map((it) => ({
-        ...it,
-        sets: it.sets.map((s) => ({ w: "", r: "", rest: s.rest || "" }))
-      })) }));
+      tpl.exercises = exercises.map((ex) => {
+        if (ex.kind === "circuit") return { ...ex };
+        return { ...ex, items: (ex.items || []).map((it) => ({
+          ...it,
+          sets: it.sets.map((s) => ({ w: "", r: "", rest: s.rest || "" }))
+        })) };
+      });
     }
     mutTemplates((ts) => [...ts, tpl]);
     setScreen("list");
@@ -2600,13 +2609,23 @@ function WorkoutView({ data, setData }) {
   };
   const launchFromTemplate = (tpl) => {
     setForm({ name: tpl.name, type: tpl.type, duration: "" });
-    if (ACTIVITY_TYPES[tpl.type]?.isCardio) {
+    const tCfg = ACTIVITY_TYPES[tpl.type];
+    if (tCfg?.isFonctionnel) {
+      setFoncBlocs((tpl.foncBlocs || []).map((b) => ({ ...b })));
+      setFoncSubtype(tpl.foncSubtype || "WOD");
+    } else if (tCfg?.isMobilite) {
+      setMobiliteBlocs((tpl.mobiliteBlocs || []).map((b) => ({ ...b })));
+      setMobiliteSubtype(tpl.mobiliteSubtype || "Statique");
+    } else if (tCfg?.isCardio) {
       setBlocks((tpl.blocks || []).map((b) => ({ ...b })));
     } else {
-      setExercises((tpl.exercises || []).map((ex) => ({
-        ...ex,
-        items: (ex.items || []).map((it) => ({ ...it, sets: it.sets.map((s) => ({ ...s, w: "", r: "" })) }))
-      })));
+      setExercises((tpl.exercises || []).map((ex) => {
+        if (ex.kind === "circuit") return { ...ex };
+        return {
+          ...ex,
+          items: (ex.items || []).map((it) => ({ ...it, sets: it.sets.map((s) => ({ ...s, w: "", r: "" })) }))
+        };
+      }));
     }
     setSelTplId(tpl.id);
     setScreen("add");
@@ -2838,6 +2857,13 @@ function WorkoutView({ data, setData }) {
       },
       "\xD7"
     )), isMuscu && exCount > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, (tpl.exercises || []).map((ex, j) => {
+      if (ex.kind === "circuit") {
+        return /* @__PURE__ */ React.createElement("div", { key: j, style: { display: "flex", justifyContent: "space-between", padding: "5px 0", borderTop: j > 0 ? `1px solid ${T.border}` : "none" } },
+          /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
+            /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, fontWeight: 700, color: T.orange, background: T.orange + "18", borderRadius: 4, padding: "1px 5px" } }, "\u26A1"),
+            /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: T.ink, fontWeight: 500 } }, "Circuit \u2014 ", (ex.exercises || []).join(", ") || "?")),
+          /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: T.muted } }, ex.rounds, "\xD7"));
+      }
       const name = ex.kind === "superset" ? (ex.items || []).map((it) => it.name).join(" + ") : ex.items?.[0]?.name || ex.name || "?";
       const sets = ex.items?.[0]?.sets?.length || ex.sets?.length || 0;
       return /* @__PURE__ */ React.createElement("div", { key: j, style: {
@@ -2846,7 +2872,10 @@ function WorkoutView({ data, setData }) {
         padding: "5px 0",
         borderTop: j > 0 ? `1px solid ${T.border}` : "none"
       } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, ex.kind === "superset" && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, fontWeight: 700, color: T.purple, background: T.purple + "18", borderRadius: 4, padding: "1px 5px" } }, "SS"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: T.ink, fontWeight: 500 } }, name)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: T.muted } }, sets, " s\xE9rie", sets > 1 ? "s" : ""));
-    })), !isMuscu && blockCount > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, (tpl.blocks || []).map((b, j) => /* @__PURE__ */ React.createElement("div", { key: j, style: {
+    })),
+    !isMuscu && (tpl.foncBlocs || []).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, fontSize: 12, color: T.muted } }, (tpl.foncBlocs || []).length, " blocs — ", tpl.foncSubtype || ""),
+    !isMuscu && (tpl.mobiliteBlocs || []).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, fontSize: 12, color: T.muted } }, (tpl.mobiliteBlocs || []).length, " exercices mobilit\xE9"),
+    !isMuscu && blockCount > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, (tpl.blocks || []).map((b, j) => /* @__PURE__ */ React.createElement("div", { key: j, style: {
       display: "flex",
       justifyContent: "space-between",
       padding: "5px 0",
@@ -3095,6 +3124,8 @@ function FoodPicker({ bank, favorites, onSelect, onClose, onAddCustom }) {
   const [picked, setPicked] = useState(null);
   const changeCat = (c) => { setCat(c); setPicked(null); setQty("100"); };
   const changeSearch = (v) => { setSearch(v); setPicked(null); };
+  const listRef = React.useRef(null);
+  React.useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [cat, search]);
   const filtered = bank.filter((f) => {
     const mc = cat === "Tous" || (cat === "Favoris" ? favorites.includes(f.id) : f.cat === cat);
     const mn = f.name.toLowerCase().includes(search.toLowerCase());
@@ -3147,7 +3178,7 @@ function FoodPicker({ bank, favorites, onSelect, onClose, onAddCustom }) {
         }
       },
       c
-    ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: "0 20px" } }, filtered.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "24px 0", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { color: T.muted, fontSize: 13, marginBottom: 12 } }, "Aucun r\xE9sultat"), /* @__PURE__ */ React.createElement(Btn, { onClick: onAddCustom, size: "sm" }, "+ Cr\xE9er un aliment")), filtered.map((f) => /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { ref: listRef, style: { flex: 1, overflowY: "auto", padding: "0 20px" } }, filtered.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "24px 0", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { color: T.muted, fontSize: 13, marginBottom: 12 } }, "Aucun r\xE9sultat"), /* @__PURE__ */ React.createElement(Btn, { onClick: onAddCustom, size: "sm" }, "+ Cr\xE9er un aliment")), filtered.map((f) => /* @__PURE__ */ React.createElement(
       "div",
       {
         key: f.id,
