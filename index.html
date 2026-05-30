@@ -6453,10 +6453,22 @@ function migrateData(saved){
   if(!saved.data?.cycleObjectives) { if(saved.data) saved.data.cycleObjectives = []; }
   if(!saved.data?.installDate) { if(saved.data) saved.data.installDate = new Date().toLocaleDateString('fr-CA'); }
   if(saved.data?.nutrition?.foodBank) {
-    const hasSauces = saved.data.nutrition.foodBank.some(f => f.cat === "Sauces");
-    if(!hasSauces) {
-      const sauces = FOOD_BANK_SEED.filter(f => f.cat === "Sauces");
-      saved.data.nutrition.foodBank = [...saved.data.nutrition.foodBank, ...sauces];
+    const fb = saved.data.nutrition.foodBank;
+    // Detect ID collision (old bug: Sucreries and Sauces both used s1-s20)
+    const ids = fb.map(f => f.id);
+    const hasDupes = ids.length !== new Set(ids).size;
+    // Detect missing categories
+    const hasSauces = fb.some(f => f.cat === "Sauces");
+    const hasLipides = fb.some(f => f.cat === "Lipides");
+    const hasBoissons = fb.some(f => f.cat === "Boissons");
+    if(hasDupes) {
+      // Full reset: keep only custom foods (id starts with "custom"), replace rest with seed
+      const custom = fb.filter(f => String(f.id).startsWith("custom"));
+      saved.data.nutrition.foodBank = [...FOOD_BANK_SEED, ...custom];
+    } else {
+      if(!hasSauces) saved.data.nutrition.foodBank = [...fb, ...FOOD_BANK_SEED.filter(f => f.cat === "Sauces")];
+      if(!hasLipides) saved.data.nutrition.foodBank = [...saved.data.nutrition.foodBank, ...FOOD_BANK_SEED.filter(f => f.cat === "Lipides")];
+      if(!hasBoissons) saved.data.nutrition.foodBank = [...saved.data.nutrition.foodBank, ...FOOD_BANK_SEED.filter(f => f.cat === "Boissons")];
     }
   }
   return saved;
