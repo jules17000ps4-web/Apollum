@@ -6336,23 +6336,25 @@ function HabitsView({ data, setData, profile }) {
       }
     },
     lbl
-  ))), tab === "today" && /* @__PURE__ */ React.createElement(TodayTab, null), tab === "today" && showAdd && /* @__PURE__ */ React.createElement(Card, { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Label, null, "Nouvelle habitude"), /* @__PURE__ */ React.createElement(Inp, { value: newH.name, onChange: (v) => setNewH((h) => ({ ...h, name: v })), placeholder: "Ex: Lire 20 minutes\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: T.muted, marginBottom: 6 } }, "Ic\xF4ne"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, HABIT_ICONS.map((ic) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: ic,
-      onClick: () => setNewH((h) => ({ ...h, icon: ic })),
-      style: {
-        fontSize: 20,
-        background: "none",
-        border: `2px solid ${newH.icon === ic ? T.text : T.border}`,
-        borderRadius: 8,
-        padding: "4px 6px",
-        cursor: "pointer",
-        transition: "border-color .12s"
-      }
-    },
-    ic
-  )))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: T.muted, marginBottom: 6 } }, "Couleur"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, HABIT_COLORS.map((col) => /* @__PURE__ */ React.createElement(
+  ))), tab === "today" && /* @__PURE__ */ React.createElement(TodayTab, null), tab === "today" && showAdd && /* @__PURE__ */ React.createElement(Card, { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Label, null, "Nouvelle habitude"), /* @__PURE__ */ React.createElement(Inp, { value: newH.name, onChange: (v) => setNewH((h) => ({ ...h, name: v })), placeholder: "Ex: Lire 20 minutes\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: T.muted, marginBottom: 6 } }, "Ic\xF4ne"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+  /* @__PURE__ */ React.createElement("input", {
+    value: newH.icon,
+    onChange: (e) => setNewH((h) => ({ ...h, icon: e.target.value })),
+    style: {
+      width: 52,
+      background: T.surface,
+      border: `1px solid ${T.border}`,
+      borderRadius: 8,
+      padding: "8px",
+      fontSize: 22,
+      textAlign: "center",
+      color: T.text,
+      fontFamily: font,
+      outline: "none"
+    }
+  }),
+  /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: T.muted, lineHeight: 1.4 } }, "Tape ou colle n'importe quel emoji")
+)), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: T.muted, marginBottom: 6 } }, "Couleur"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, HABIT_COLORS.map((col) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: col,
