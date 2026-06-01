@@ -1667,7 +1667,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
       exType: ssB.type,
       isTemplate
     }
-  )),
+  ),
   mode === "circuit" ? /* @__PURE__ */ React.createElement(React.Fragment, null,
     /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 12 } },
       [["workTime", "Travail", "s", circWorkTime, setCircWorkTime], ["restBetween", "Repos", "s", circRestTime, setCircRestTime], ["rounds", "Boucles", "x", circRounds, setCircRounds]].map(([circKey, circLbl, circUnit, circVal, circSetter]) =>
@@ -1692,7 +1692,7 @@ function MuscuForm({ exercises, setExercises, isTemplate = false, fromTemplate =
     circPickerOpen && /* @__PURE__ */ React.createElement(ExercisePicker, { onSelect: (pickedEx) => { if (pickedEx) setCircExs((es) => [...es, pickedEx.name]); setCircPickerOpen(false); }, onClose: () => setCircPickerOpen(false) }),
     /* @__PURE__ */ React.createElement("button", { onClick: () => setCircPickerOpen(true), style: { display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "none", border: "1px dashed " + T.border, borderRadius: 9, color: T.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font, width: "100%", boxSizing: "border-box" } }, "+ Ajouter un exercice")
   ) : null,
-  /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Btn, { onClick: commit, size: "sm" }, mode === "superset" ? "\u2713 Valider le superset" : mode === "circuit" ? "\u2713 Valider le circuit" : "\u2713 Valider l'exercice")))));
+  /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Btn, { onClick: commit, size: "sm" }, mode === "superset" ? "\u2713 Valider le superset" : mode === "circuit" ? "\u2713 Valider le circuit" : "\u2713 Valider l'exercice"))))));
 }
 const inpStyle = {
   background: T.bg,
