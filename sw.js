@@ -1,4 +1,4 @@
-const CACHE = "fittrack-v1";
+const CACHE = "apollum-v3";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", e => {
@@ -16,23 +16,18 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  // Network first for CDN scripts, cache first for app shell
   const url = new URL(e.request.url);
   if (url.hostname !== location.hostname) {
-    // CDN resources — try network, fall back to cache
     e.respondWith(
       fetch(e.request).catch(() => caches.match(e.request))
     );
     return;
   }
-  // App shell — cache first
+  // Network first pour l'app shell — toujours récupérer la dernière version
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const networkFetch = fetch(e.request).then(response => {
-        caches.open(CACHE).then(c => c.put(e.request, response.clone()));
-        return response;
-      });
-      return cached || networkFetch;
-    })
+    fetch(e.request).then(response => {
+      caches.open(CACHE).then(c => c.put(e.request, response.clone()));
+      return response;
+    }).catch(() => caches.match(e.request))
   );
 });
